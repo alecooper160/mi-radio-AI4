@@ -11,8 +11,12 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .playing-glow {
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 10px;
         }
     </style>
 </head>
@@ -23,11 +27,10 @@
             <h1 class="text-4xl font-extrabold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
                 AI Radio Host Extension
             </h1>
-            <p class="text-slate-400 mt-2">Tu propio locutor de radio con inteligencia artificial</p>
+            <p class="text-slate-400 mt-2">Tu locutor personal impulsado por IA</p>
         </header>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <!-- Configuración -->
             <section class="md:col-span-1 space-y-6">
                 <div class="glass p-6 rounded-2xl">
                     <h2 class="text-xl font-bold mb-4 flex items-center">
@@ -36,43 +39,41 @@
                     
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-slate-400 mb-1">Nombre del Streamer</label>
-                            <input id="streamerName" type="text" placeholder="Ej: Elizabeth" 
+                            <label class="block text-sm font-medium text-slate-400 mb-1">Streamer</label>
+                            <input id="streamerName" type="text" placeholder="Elizabeth" 
                                 class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
                         </div>
 
                         <div>
                             <label class="block text-sm font-medium text-slate-400 mb-1">Juego Actual</label>
-                            <input id="currentGame" type="text" placeholder="Ej: Minecraft, Valorant..." 
+                            <input id="currentGame" type="text" placeholder="Minecraft, etc." 
                                 class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 outline-none">
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-slate-400 mb-1">Estilo del Locutor</label>
+                            <label class="block text-sm font-medium text-slate-400 mb-1">Estilo</label>
                             <select id="hostStyle" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 outline-none">
-                                <option value="animado y con mucha energía">Animado / Enérgico</option>
-                                <option value="serio y profesional">Serio / Profesional</option>
-                                <option value="relajado y chill">Relajado / Chill</option>
-                                <option value="misterioso y profundo">Misterioso</option>
-                                <option value="sarcástico y divertido">Sarcástico / Divertido</option>
+                                <option value="animado y con mucha energía">Animado</option>
+                                <option value="serio y profesional">Serio</option>
+                                <option value="relajado y chill">Relajado</option>
+                                <option value="sarcástico y divertido">Sarcástico</option>
                             </select>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-slate-400 mb-1">Voz de la IA</label>
+                            <label class="block text-sm font-medium text-slate-400 mb-1">Voz IA</label>
                             <select id="voiceName" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 outline-none">
                                 <option value="Kore">Kore (Cálida)</option>
                                 <option value="Zephyr">Zephyr (Juvenil)</option>
                                 <option value="Charon">Charon (Profunda)</option>
                                 <option value="Leda">Leda (Elegante)</option>
-                                <option value="Puck">Puck (Aventurero)</option>
                             </select>
                         </div>
                     </div>
                 </div>
 
                 <div class="glass p-6 rounded-2xl">
-                    <h2 class="text-xl font-bold mb-4">🎵 Subir Música (MP3)</h2>
+                    <h2 class="text-xl font-bold mb-4">🎵 Cargar MP3</h2>
                     <input type="file" id="fileInput" multiple accept="audio/mp3" class="hidden">
                     <button onclick="document.getElementById('fileInput').click()" 
                         class="w-full py-3 border-2 border-dashed border-slate-700 rounded-xl hover:border-blue-500 hover:bg-blue-500/10 transition-all text-sm">
@@ -81,10 +82,9 @@
                 </div>
             </section>
 
-            <!-- Playlist y Reproductor -->
             <section class="md:col-span-2 space-y-6">
-                <div id="playerCard" class="glass p-8 rounded-3xl relative overflow-hidden transition-all">
-                    <div id="statusIndicator" class="absolute top-4 right-4 flex items-center space-x-2">
+                <div id="playerCard" class="glass p-8 rounded-3xl relative overflow-hidden">
+                    <div id="statusIndicator" class="absolute top-4 right-4 flex items-center space-x-2 hidden">
                         <span class="relative flex h-3 w-3">
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                             <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
@@ -93,31 +93,28 @@
                     </div>
 
                     <div class="text-center py-10">
-                        <div id="diskIcon" class="w-32 h-32 bg-gradient-to-tr from-blue-600 to-purple-600 rounded-full mx-auto mb-6 flex items-center justify-center transition-transform duration-500">
+                        <div id="diskIcon" class="w-32 h-32 bg-gradient-to-tr from-blue-600 to-purple-600 rounded-full mx-auto mb-6 flex items-center justify-center">
                             <svg class="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
                             </svg>
                         </div>
-                        <h3 id="currentSongTitle" class="text-2xl font-bold">Sin música cargada</h3>
+                        <h3 id="currentSongTitle" class="text-2xl font-bold">Lista vacía</h3>
                         <p id="hostNarration" class="text-slate-400 italic mt-4 px-10 h-20 overflow-y-auto leading-relaxed">
-                            Configura tu locutor y presiona reproducir...
+                            Listo para comenzar el show...
                         </p>
                     </div>
 
                     <div class="mt-8 flex justify-center space-x-6">
-                        <button id="prevBtn" class="p-4 rounded-full bg-slate-800 hover:bg-slate-700 transition-colors">⏮️</button>
-                        <button id="playBtn" class="p-4 px-8 rounded-full bg-blue-600 hover:bg-blue-500 font-bold shadow-lg shadow-blue-500/20 transition-all">REPRODUCIR RADIO</button>
-                        <button id="nextBtn" class="p-4 rounded-full bg-slate-800 hover:bg-slate-700 transition-colors">⏭️</button>
+                        <button id="prevBtn" class="p-4 rounded-full bg-slate-800 hover:bg-slate-700">⏮️</button>
+                        <button id="playBtn" class="p-4 px-8 rounded-full bg-blue-600 hover:bg-blue-500 font-bold shadow-lg">REPRODUCIR</button>
+                        <button id="nextBtn" class="p-4 rounded-full bg-slate-800 hover:bg-slate-700">⏭️</button>
                     </div>
                 </div>
 
                 <div class="glass p-6 rounded-2xl">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold">Lista de Reproducción</h2>
-                        <span id="queueCount" class="text-xs bg-slate-800 px-2 py-1 rounded text-slate-400">0 canciones</span>
-                    </div>
+                    <h2 class="text-xl font-bold mb-4">Playlist</h2>
                     <ul id="playlistUI" class="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                        <li class="text-slate-500 text-center py-4">Sube archivos MP3 para comenzar</li>
+                        <li class="text-slate-500 text-center py-4">Sin canciones</li>
                     </ul>
                 </div>
             </section>
@@ -140,6 +137,7 @@
             playBtn: document.getElementById('playBtn'),
             currentSongTitle: document.getElementById('currentSongTitle'),
             hostNarration: document.getElementById('hostNarration'),
+            statusIndicator: document.getElementById('statusIndicator'),
             hostStatus: document.getElementById('hostStatus'),
             musicPlayer: document.getElementById('musicPlayer'),
             ttsPlayer: document.getElementById('ttsPlayer'),
@@ -147,205 +145,140 @@
             currentGame: document.getElementById('currentGame'),
             hostStyle: document.getElementById('hostStyle'),
             voiceName: document.getElementById('voiceName'),
-            diskIcon: document.getElementById('diskIcon'),
-            queueCount: document.getElementById('queueCount')
+            diskIcon: document.getElementById('diskIcon')
         };
+
+        // --- Exponential Backoff Fetch ---
+        async function fetchWithRetry(url, options, retries = 5, backoff = 1000) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.ok) return await response.json();
+                    throw new Error(`HTTP ${response.status}`);
+                } catch (err) {
+                    if (i === retries - 1) throw err;
+                    await new Promise(r => setTimeout(r, backoff));
+                    backoff *= 2;
+                }
+            }
+        }
 
         DOM.fileInput.addEventListener('change', (e) => {
             const files = Array.from(e.target.files);
             files.forEach(file => {
-                const url = URL.createObjectURL(file);
-                playlist.push({
-                    name: file.name.replace('.mp3', ''),
-                    url: url
-                });
+                playlist.push({ name: file.name.replace('.mp3', ''), url: URL.createObjectURL(file) });
             });
             renderPlaylist();
         });
 
         function renderPlaylist() {
-            DOM.queueCount.innerText = `${playlist.length} canciones`;
             if (playlist.length === 0) {
-                DOM.playlistUI.innerHTML = '<li class="text-slate-500 text-center py-4">Sube archivos MP3 para comenzar</li>';
+                DOM.playlistUI.innerHTML = '<li class="text-slate-500 text-center py-4">Sube archivos MP3</li>';
                 return;
             }
             DOM.playlistUI.innerHTML = playlist.map((song, index) => `
-                <li class="flex justify-between items-center p-3 rounded-lg ${index === currentIndex ? 'bg-blue-500/20 border border-blue-500/30 text-blue-300' : 'bg-slate-900/50 hover:bg-slate-800'} transition-all">
-                    <span class="truncate pr-4 flex items-center">
-                        ${index === currentIndex ? '🔊 ' : ''} ${song.name}
-                    </span>
-                    <button onclick="window.removeSong(${index})" class="text-xs text-slate-500 hover:text-red-400 transition-colors">Eliminar</button>
+                <li class="flex justify-between items-center p-3 rounded-lg ${index === currentIndex ? 'bg-blue-500/20 text-blue-300' : 'bg-slate-900/50'}">
+                    <span class="truncate">${index + 1}. ${song.name}</span>
                 </li>
             `).join('');
         }
 
-        window.removeSong = (index) => {
-            playlist.splice(index, 1);
-            if (index === currentIndex) {
-                DOM.musicPlayer.pause();
-                DOM.ttsPlayer.pause();
-                currentIndex--;
-            } else if (index < currentIndex) {
-                currentIndex--;
-            }
-            renderPlaylist();
-        };
-
-        async function fetchHostScript(songName) {
-            const streamer = DOM.streamerName.value || "el streamer";
-            const game = DOM.currentGame.value || "su juego favorito";
+        async function getScript(songName) {
+            const streamer = DOM.streamerName.value || "Elizabeth";
+            const game = DOM.currentGame.value || "su juego";
             const style = DOM.hostStyle.value;
             
-            const prompt = `Eres un locutor de radio. Estilo: ${style}. 
-            El streamer se llama ${streamer} y está jugando a ${game}.
-            Presenta la canción "${songName}" mencionando el juego que está jugando el streamer de forma orgánica.
-            Máximo 18 palabras. No uses hashtags ni emojis.
-            Ejemplo: "Mientras Elizabeth domina en ${game}, disfrutamos de ${songName}."`;
+            const prompt = `Eres un locutor de radio. Estilo: ${style}. El streamer es ${streamer} y juega ${game}. Presenta la canción "${songName}" en menos de 20 palabras.`;
 
-            try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }]
-                    })
-                });
-                const data = await response.json();
-                return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || `Escuchamos ${songName} en el stream.`;
-            } catch (error) {
-                return `A continuación, escuchamos ${songName}.`;
-            }
+            const data = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+            return data.candidates[0].content.parts[0].text.trim();
         }
 
-        async function playHostVoice(text) {
-            const voice = DOM.voiceName.value;
+        async function playTTS(text) {
             const payload = {
-                contents: [{ parts: [{ text: `Di con tono de locutor: ${text}` }] }],
+                contents: [{ parts: [{ text: `Locutor dice: ${text}` }] }],
                 generationConfig: {
                     responseModalities: ["AUDIO"],
-                    speechConfig: {
-                        voiceConfig: {
-                            prebuiltVoiceConfig: { voiceName: voice }
-                        }
-                    }
+                    speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: DOM.voiceName.value } } }
                 },
                 model: "gemini-2.5-flash-preview-tts"
             };
 
-            try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await response.json();
-                const pcmData = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-                if (!pcmData) throw new Error("No audio data");
+            const data = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
 
-                const wavBlob = pcmToWav(pcmData, 24000);
-                const url = URL.createObjectURL(wavBlob);
-                
-                DOM.ttsPlayer.src = url;
-                return new Promise((resolve) => {
-                    DOM.ttsPlayer.onended = resolve;
-                    DOM.ttsPlayer.onerror = resolve;
-                    DOM.ttsPlayer.play();
-                });
-            } catch (error) {
-                console.error("Error en TTS", error);
-                return Promise.resolve();
-            }
+            const pcmData = data.candidates[0].content.parts[0].inlineData.data;
+            const wavBlob = pcmToWav(pcmData, 24000);
+            DOM.ttsPlayer.src = URL.createObjectURL(wavBlob);
+            
+            return new Promise(resolve => {
+                DOM.ttsPlayer.onended = resolve;
+                DOM.ttsPlayer.play().catch(resolve);
+            });
         }
 
         function pcmToWav(base64Pcm, sampleRate) {
-            const binaryString = atob(base64Pcm);
-            const len = binaryString.length;
-            const bytes = new Uint8Array(len);
-            for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
-            const buffer = new ArrayBuffer(44 + len);
+            const bytes = Uint8Array.from(atob(base64Pcm), c => c.charCodeAt(0));
+            const buffer = new ArrayBuffer(44 + bytes.length);
             const view = new DataView(buffer);
-            const writeString = (offset, string) => {
-                for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
-            };
-            writeString(0, 'RIFF');
-            view.setUint32(4, 36 + len, true);
-            writeString(8, 'WAVE');
-            writeString(12, 'fmt ');
-            view.setUint32(16, 16, true);
-            view.setUint16(20, 1, true);
-            view.setUint16(22, 1, true);
-            view.setUint32(24, sampleRate, true);
-            view.setUint32(28, sampleRate * 2, true);
-            view.setUint16(32, 2, true);
-            view.setUint16(34, 16, true);
-            writeString(36, 'data');
-            view.setUint32(40, len, true);
-            for (let i = 0; i < len; i++) view.setUint8(44 + i, bytes[i]);
+            const writeStr = (off, s) => { for (let i=0; i<s.length; i++) view.setUint8(off+i, s.charCodeAt(i)); };
+            writeStr(0, 'RIFF'); view.setUint32(4, 36 + bytes.length, true);
+            writeStr(8, 'WAVE'); writeStr(12, 'fmt ');
+            view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true); view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true); view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true); writeStr(36, 'data');
+            view.setUint32(40, bytes.length, true);
+            new Uint8Array(buffer, 44).set(bytes);
             return new Blob([buffer], { type: 'audio/wav' });
         }
 
-        async function playNext() {
-            if (playlist.length === 0 || !isRadioPlaying) return;
+        async function playStep() {
+            if (!isRadioPlaying || playlist.length === 0) return;
             
             currentIndex = (currentIndex + 1) % playlist.length;
             const song = playlist[currentIndex];
-            
             renderPlaylist();
-            DOM.currentSongTitle.innerText = "Locutor presentando...";
-            DOM.hostStatus.innerText = "Locutor en vivo";
-            DOM.diskIcon.classList.add('animate-spin');
 
-            const script = await fetchHostScript(song.name);
-            DOM.hostNarration.innerText = script;
+            DOM.statusIndicator.classList.remove('hidden');
+            DOM.hostStatus.innerText = "Locutor hablando";
+            DOM.currentSongTitle.innerText = "Presentando...";
             
-            await playHostVoice(script);
+            try {
+                const script = await getScript(song.name);
+                DOM.hostNarration.innerText = script;
+                await playTTS(script);
+            } catch (e) { console.error(e); }
 
             if (!isRadioPlaying) return;
 
-            DOM.hostStatus.innerText = "Sonando";
+            DOM.hostStatus.innerText = "Música";
             DOM.currentSongTitle.innerText = song.name;
+            DOM.diskIcon.classList.add('animate-spin');
             DOM.musicPlayer.src = song.url;
             DOM.musicPlayer.play();
         }
 
-        DOM.playBtn.addEventListener('click', () => {
-            if (!isRadioPlaying) {
-                if (playlist.length === 0) return;
-                isRadioPlaying = true;
-                DOM.playBtn.innerText = "DETENER RADIO";
+        DOM.playBtn.onclick = () => {
+            isRadioPlaying = !isRadioPlaying;
+            if (isRadioPlaying) {
+                DOM.playBtn.innerText = "PARAR";
                 DOM.playBtn.classList.replace('bg-blue-600', 'bg-red-600');
-                playNext();
+                playStep();
             } else {
-                isRadioPlaying = false;
-                DOM.playBtn.innerText = "REPRODUCIR RADIO";
-                DOM.playBtn.classList.replace('bg-red-600', 'bg-blue-600');
-                DOM.musicPlayer.pause();
-                DOM.ttsPlayer.pause();
-                DOM.diskIcon.classList.remove('animate-spin');
-            }
-        });
-
-        DOM.musicPlayer.onended = () => {
-            if (isRadioPlaying) playNext();
-        };
-
-        document.getElementById('nextBtn').onclick = () => {
-            if (playlist.length > 0) {
-                DOM.musicPlayer.pause();
-                DOM.ttsPlayer.pause();
-                playNext();
+                location.reload(); // Simplificado para reset
             }
         };
 
-        document.getElementById('prevBtn').onclick = () => {
-            if (playlist.length > 0) {
-                currentIndex = (currentIndex - 2 + playlist.length) % playlist.length;
-                DOM.musicPlayer.pause();
-                DOM.ttsPlayer.pause();
-                playNext();
-            }
-        };
-
+        DOM.musicPlayer.onended = () => { if (isRadioPlaying) playStep(); };
+        document.getElementById('nextBtn').onclick = () => { DOM.musicPlayer.pause(); playStep(); };
     </script>
 </body>
 </html>
