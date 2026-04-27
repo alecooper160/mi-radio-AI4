@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stream Radio AI - Premium</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Radio Host</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #020617; color: white; margin: 0; }
-        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        body { background-color: black; color: white; margin: 0; }
+        .glass { background: rgba(24, 24, 27, 0.8); backdrop-filter: blur(10px); }
+        input[type="file"]::file-selector-button {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -22,228 +22,193 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        const VOICES = [
-            { id: 'Kore', name: 'Kore (Juvenil/Enérgico)' },
-            { id: 'Zephyr', name: 'Zephyr (Profundo/Serio)' },
-            { id: 'Charon', name: 'Charon (Misterioso)' },
-            { id: 'Puck', name: 'Puck (Divertido)' }
-        ];
-
-        function App() {
+        const App = () => {
             const [streamerName, setStreamerName] = useState('Elizabeth');
-            const [gameName, setGameName] = useState('League of Legends');
-            const [personality, setPersonality] = useState('animado y con mucha energía');
-            const [selectedVoice, setSelectedVoice] = useState('Kore');
-            
-            const [currentTrack, setCurrentTrack] = useState({ title: "Radio Offline", artist: "Sube un MP3 para empezar" });
-            const [playlist, setPlaylist] = useState([]);
+            const [currentGame, setCurrentGame] = useState('League of Legends');
+            const [customInstructions, setCustomInstructions] = useState('Menciona que estamos ganando');
+            const [isGenerating, setIsGenerating] = useState(false);
+            const [currentSong, setCurrentSong] = useState({ title: 'Sin archivo', artist: 'Sube un MP3' });
+            const [audioUrl, setAudioUrl] = useState(null);
             const [isPlaying, setIsPlaying] = useState(false);
             
-            const [isGenerating, setIsGenerating] = useState(false);
-            const [announcementText, setAnnouncementText] = useState("");
-            const [isSpeaking, setIsSpeaking] = useState(false);
-
+            const audioRef = useRef(null);
             const apiKey = ""; 
 
-            const audioRef = useRef(null);
-
             const handleFileUpload = (e) => {
-                const files = Array.from(e.target.files);
-                const newTracks = files.map(file => ({
-                    title: file.name.replace(/\.[^/.]+$/, ""),
-                    artist: "Archivo Local",
-                    url: URL.createObjectURL(file)
-                }));
-                
-                const updatedPlaylist = [...playlist, ...newTracks];
-                setPlaylist(updatedPlaylist);
-                
-                if (playlist.length === 0 && newTracks.length > 0) {
-                    loadTrack(newTracks[0]);
-                }
-            };
-
-            const loadTrack = (track) => {
-                setCurrentTrack(track);
-                generateAnnouncement(track);
-            };
-
-            const generateAnnouncement = async (track) => {
-                if (!apiKey) return;
-                setIsGenerating(true);
-
-                // Prompt mejorado para forzar rol de locutor profesional
-                const systemPrompt = `Eres un locutor de radio estrella llamado ${selectedVoice}, presentando el stream de ${streamerName}. 
-                Tu estilo es ${personality}. Actualmente están jugando ${gameName}. 
-                Debes sonar carismático, usar frases de radio (ej: "¡Sintonizando!", "En los controles", "No le cambien"). 
-                Presenta la canción "${track.title}" con mucha personalidad.`;
-
-                const userPrompt = `Presenta la canción "${track.title}" de "${track.artist}". Menciona que estamos en vivo con ${gameName}. Máximo 25 palabras. Sé muy creativo y profesional.`;
-
-                try {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            contents: [{ parts: [{ text: userPrompt }] }],
-                            systemInstruction: { parts: [{ text: systemPrompt }] }
-                        })
-                    });
-                    const data = await res.json();
-                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "¡Seguimos con más música!";
-                    setAnnouncementText(text);
-                    speak(text, track);
-                } catch (e) { 
-                    console.error(e); 
-                    startMusic(track);
-                } finally { setIsGenerating(false); }
-            };
-
-            const speak = async (text, track) => {
-                setIsSpeaking(true);
-                // Si la música ya estaba sonando, bajamos el volumen
-                if (audioRef.current) audioRef.current.volume = 0.15;
-
-                try {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{ parts: [{ text: text }] }],
-                            generationConfig: { 
-                                responseModalities: ["AUDIO"],
-                                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: selectedVoice } } }
-                            },
-                            model: "gemini-2.5-flash-preview-tts"
-                        })
-                    });
-                    const data = await res.json();
-                    const base64 = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+                const file = e.target.files[0];
+                if (file) {
+                    const fileName = file.name.replace(/\.[^/.]+$/, "");
+                    const parts = fileName.split("-");
                     
-                    if (base64) {
-                        const audio = new Audio("data:audio/wav;base64," + base64);
-                        audio.onended = () => {
-                            setIsSpeaking(false);
-                            startMusic(track);
-                        };
-                        audio.play();
+                    if (parts.length > 1) {
+                        setCurrentSong({ title: parts[1].trim(), artist: parts[0].trim() });
                     } else {
-                        startMusic(track);
+                        setCurrentSong({ title: fileName, artist: "Artista desconocido" });
                     }
-                } catch (e) { 
-                    setIsSpeaking(false); 
-                    startMusic(track);
-                }
-            };
 
-            const startMusic = (track) => {
-                if (audioRef.current) {
-                    audioRef.current.src = track.url;
-                    audioRef.current.volume = 1.0;
-                    if (isPlaying) audioRef.current.play();
+                    if (audioUrl) URL.revokeObjectURL(audioUrl);
+                    const url = URL.createObjectURL(file);
+                    setAudioUrl(url);
+                    setIsPlaying(false);
                 }
-            };
-
-            const nextTrack = () => {
-                if (playlist.length === 0) return;
-                const idx = playlist.findIndex(t => t.title === currentTrack.title);
-                const next = (idx + 1) % playlist.length;
-                loadTrack(playlist[next]);
             };
 
             const togglePlay = () => {
-                if (!audioRef.current.src && playlist.length > 0) {
-                    loadTrack(playlist[0]);
+                if (!audioRef.current) return;
+                if (isPlaying) {
+                    audioRef.current.pause();
+                } else {
+                    audioRef.current.play();
                 }
-                if (isPlaying) audioRef.current.pause(); else audioRef.current.play();
                 setIsPlaying(!isPlaying);
             };
 
+            const pcmToWav = (pcmData, sampleRate) => {
+                const buffer = new ArrayBuffer(44 + pcmData.length * 2);
+                const view = new DataView(buffer);
+                const writeString = (offset, string) => {
+                    for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
+                };
+                writeString(0, 'RIFF');
+                view.setUint32(4, 36 + pcmData.length * 2, true);
+                writeString(8, 'WAVE');
+                writeString(12, 'fmt ');
+                view.setUint32(16, 16, true);
+                view.setUint16(20, 1, true);
+                view.setUint16(22, 1, true);
+                view.setUint32(24, sampleRate, true);
+                view.setUint32(28, sampleRate * 2, true);
+                view.setUint16(32, 2, true);
+                view.setUint16(34, 16, true);
+                writeString(36, 'data');
+                view.setUint32(40, pcmData.length * 2, true);
+                let offset = 44;
+                for (let i = 0; i < pcmData.length; i++, offset += 2) view.setInt16(offset, pcmData[i], true);
+                return new Blob([buffer], { type: 'audio/wav' });
+            };
+
+            const generatePresentation = async () => {
+                if (isGenerating) return;
+                setIsGenerating(true);
+
+                const systemPrompt = `Eres un locutor de radio FM enérgico para el stream de ${streamerName}. Están jugando ${currentGame}. Instrucción: ${customInstructions}. Presenta la canción "${currentSong.title}" de "${currentSong.artist}" en menos de 15 segundos de forma profesional.`;
+                
+                try {
+                    const textRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: "Genera la intro de radio." }] }],
+                            systemInstruction: { parts: [{ text: systemPrompt }] }
+                        })
+                    });
+                    const textData = await textRes.json();
+                    const script = textData.candidates?.[0]?.content?.parts?.[0]?.text || "¡Suban el volumen!";
+
+                    const ttsRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: script }] }],
+                            generationConfig: {
+                                responseModalities: ["AUDIO"],
+                                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } }
+                            }
+                        })
+                    });
+                    const ttsData = await ttsRes.json();
+                    const pcmBase64 = ttsData.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+                    
+                    if (pcmBase64) {
+                        const pcmBinary = atob(pcmBase64);
+                        const pcmArray = new Int16Array(pcmBinary.length / 2);
+                        for (let i = 0; i < pcmArray.length; i++) {
+                            pcmArray[i] = (pcmBinary.charCodeAt(i * 2) & 0xff) | (pcmBinary.charCodeAt(i * 2 + 1) << 8);
+                        }
+                        const wavBlob = pcmToWav(pcmArray, 24000);
+                        const aiAudio = new Audio(URL.createObjectURL(wavBlob));
+                        aiAudio.play();
+                    }
+                } catch (e) {
+                    console.error(e);
+                } finally {
+                    setIsGenerating(false);
+                }
+            };
+
             return (
-                <div className="min-h-screen p-4 md:p-8">
-                    <audio ref={audioRef} onEnded={nextTrack} />
-                    <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
-                        
-                        <div className="space-y-6">
-                            <div className="glass p-6 rounded-[2rem]">
-                                <h2 className="text-indigo-400 font-black uppercase text-xs tracking-widest mb-6">Configuración</h2>
-                                <div className="space-y-4">
-                                    <label className="block">
-                                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Tu Nombre</span>
-                                        <input value={streamerName} onChange={e => setStreamerName(e.target.value)} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 mt-1 text-sm outline-none focus:border-indigo-500" />
-                                    </label>
-                                    <label className="block">
-                                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Juego Actual</span>
-                                        <input value={gameName} onChange={e => setGameName(e.target.value)} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 mt-1 text-sm outline-none" />
-                                    </label>
-                                    <label className="block">
-                                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Voz del Locutor</span>
-                                        <select value={selectedVoice} onChange={e => setSelectedVoice(e.target.value)} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 mt-1 text-sm outline-none">
-                                            {VOICES.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-                                        </select>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div className="glass p-6 rounded-[2rem]">
-                                <h2 className="text-emerald-400 font-black uppercase text-xs tracking-widest mb-4">Cargar Música</h2>
-                                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-800 rounded-2xl cursor-pointer hover:bg-white/5 transition-all">
-                                    <span className="text-xs text-slate-500 font-bold uppercase text-center px-4">Selecciona tus archivos MP3</span>
-                                    <input type="file" className="hidden" accept="audio/mpeg" multiple onChange={handleFileUpload} />
-                                </label>
-                                
-                                <div className="mt-6 max-h-40 overflow-y-auto custom-scrollbar space-y-2">
-                                    {playlist.map((t, i) => (
-                                        <div key={i} onClick={() => loadTrack(t)} className={`p-3 rounded-xl text-xs truncate cursor-pointer transition-colors ${currentTrack.title === t.title ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-900 text-slate-400 hover:bg-slate-800'}`}>
-                                            {t.title}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+                <div className="min-h-screen flex items-center justify-center p-4">
+                    <div className="glass border border-zinc-800 p-8 rounded-[3rem] w-full max-w-lg shadow-2xl">
+                        <div className="text-center mb-8">
+                            <h1 className="text-3xl font-black tracking-tighter uppercase italic">STREAM <span className="text-purple-500">RADIO</span></h1>
+                            <p className="text-zinc-500 text-[10px] font-bold mt-1 uppercase tracking-[0.3em]">Locutor Local MP3</p>
                         </div>
 
-                        <div className="md:col-span-2 space-y-6 text-center">
-                            <div className="glass p-12 rounded-[3rem] shadow-2xl flex flex-col items-center border-t border-white/10 relative overflow-hidden">
-                                {isSpeaking && <div className="absolute top-6 right-6 bg-red-600 px-3 py-1 rounded-full text-[10px] font-black uppercase animate-pulse">On Air</div>}
-                                
-                                <div className={`w-48 h-48 bg-slate-800 rounded-[3rem] mb-8 flex items-center justify-center text-6xl shadow-inner transition-all duration-500 ${isPlaying ? 'scale-105 shadow-indigo-500/40 rotate-3' : 'opacity-40'}`}>
-                                    {isPlaying ? "📻" : "💤"}
+                        <div className="space-y-4 mb-8">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[10px] font-black text-zinc-500 uppercase mb-1 block">Streamer</label>
+                                    <input type="text" value={streamerName} onChange={(e) => setStreamerName(e.target.value)} className="w-full bg-black border border-zinc-800 rounded-2xl px-4 py-2 text-sm outline-none focus:border-purple-600"/>
                                 </div>
-                                
-                                <h1 className="text-4xl font-black mb-2 tracking-tight truncate max-w-full px-4">{currentTrack.title}</h1>
-                                <p className="text-indigo-400 font-bold uppercase tracking-widest mb-10">{currentTrack.artist}</p>
-                                
-                                <div className="flex items-center gap-8">
-                                    <button onClick={togglePlay} className="w-24 h-24 bg-white text-black rounded-full flex items-center justify-center text-4xl shadow-xl hover:scale-110 active:scale-95 transition-all">
-                                        {isPlaying ? "⏸" : "▶"}
-                                    </button>
-                                    <button onClick={nextTrack} className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center text-2xl hover:bg-slate-700 transition-colors border border-white/5">
-                                        ⏭
-                                    </button>
+                                <div>
+                                    <label className="text-[10px] font-black text-zinc-500 uppercase mb-1 block">Juego</label>
+                                    <input type="text" value={currentGame} onChange={(e) => setCurrentGame(e.target.value)} className="w-full bg-black border border-zinc-800 rounded-2xl px-4 py-2 text-sm outline-none focus:border-purple-600"/>
                                 </div>
                             </div>
-
-                            <div className="glass p-8 rounded-[2rem] text-left border-l-4 border-indigo-500">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-3 h-3 rounded-full ${isSpeaking ? 'bg-red-500 animate-ping' : 'bg-slate-700'}`}></div>
-                                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Micrófono: {selectedVoice}</span>
+                            
+                            <div>
+                                <label className="text-[10px] font-black text-zinc-500 uppercase mb-1 block">Subir música (MP3)</label>
+                                <div className="relative">
+                                    <input 
+                                        type="file" 
+                                        accept="audio/mpeg" 
+                                        onChange={handleFileUpload} 
+                                        className="w-full bg-black border border-zinc-800 rounded-2xl px-4 py-2 text-sm outline-none focus:border-purple-600 file:hidden cursor-pointer"
+                                    />
+                                    <div className="absolute right-4 top-2.5 pointer-events-none text-purple-500">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                                     </div>
-                                    <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">{gameName}</span>
                                 </div>
-                                <p className="text-2xl italic font-light text-slate-200 leading-relaxed">
-                                    {isGenerating ? 
-                                        <span className="opacity-50 animate-pulse">Redactando presentación profesional...</span> : 
-                                        (announcementText ? `"${announcementText}"` : "Sube tus canciones para iniciar la transmisión.")
-                                    }
-                                </p>
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] font-black text-zinc-500 uppercase mb-1 block">Instrucciones</label>
+                                <textarea value={customInstructions} onChange={(e) => setCustomInstructions(e.target.value)} className="w-full bg-black border border-zinc-800 rounded-2xl px-4 py-2 text-sm outline-none focus:border-purple-600 resize-none" rows="2"></textarea>
                             </div>
                         </div>
 
+                        {audioUrl && <audio ref={audioRef} src={audioUrl} onEnded={() => setIsPlaying(false)} className="hidden" />}
+
+                        <div className="bg-zinc-950 p-6 rounded-[2rem] border border-zinc-900 mb-8 flex items-center gap-6 shadow-inner">
+                            <button 
+                                onClick={togglePlay}
+                                disabled={!audioUrl}
+                                className={`w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all ${audioUrl ? 'bg-white text-black hover:scale-105' : 'bg-zinc-900 text-zinc-800'}`}
+                            >
+                                {isPlaying ? (
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                                ) : (
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="ml-1"><path d="M5 3l14 9-14 9V3z"/></svg>
+                                )}
+                            </button>
+                            <div className="overflow-hidden">
+                                <p className="text-purple-500 text-[10px] font-black uppercase tracking-widest mb-1 italic">Now Playing</p>
+                                <h2 className="font-bold truncate uppercase tracking-tight">{currentSong.title}</h2>
+                                <p className="text-zinc-500 text-xs truncate font-medium">{currentSong.artist}</p>
+                            </div>
+                        </div>
+
+                        <button 
+                            onClick={generatePresentation}
+                            disabled={isGenerating || !audioUrl}
+                            className={`w-full py-5 rounded-[2.5rem] font-black text-lg transition-all shadow-xl ${isGenerating || !audioUrl ? 'bg-zinc-900 text-zinc-700 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-900/40 active:scale-95'}`}
+                        >
+                            {isGenerating ? 'IA GRABANDO...' : 'PRESENTAR CANCIÓN'}
+                        </button>
                     </div>
                 </div>
             );
-        }
+        };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
