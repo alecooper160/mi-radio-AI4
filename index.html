@@ -20,7 +20,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useRef } = React;
 
         const App = () => {
             const apiKey = "AIzaSyApkkp1hMsopejJzV5sDXzpcdY0wWHjJT0"; 
@@ -33,18 +33,16 @@
             const [currentIndex, setCurrentIndex] = useState(null);
             const [error, setError] = useState('');
             
-            const fetchWithRetry = async (url, options, retries = 5, backoff = 1000) => {
+            const fetchWithRetry = async (url, options, retries = 3) => {
                 for (let i = 0; i < retries; i++) {
                     try {
                         const response = await fetch(url, options);
                         const data = await response.json();
-                        if (!response.ok) {
-                            throw new Error(data.error?.message || `Error ${response.status}`);
-                        }
+                        if (!response.ok) throw new Error(data.error?.message || `Error ${response.status}`);
                         return data;
                     } catch (err) {
                         if (i === retries - 1) throw err;
-                        await new Promise(r => setTimeout(r, backoff * Math.pow(2, i)));
+                        await new Promise(r => setTimeout(r, 2000));
                     }
                 }
             };
@@ -90,22 +88,21 @@
                 setError('');
 
                 const track = playlist[currentIndex];
-                const systemPrompt = `Eres un locutor de radio para el stream de ${streamerName}. Juego actual: ${currentGame}. Instrucción: ${customInstructions}. Presenta la canción "${track.title}" con estilo profesional de radio en 10-15 segundos.`;
+                const promptText = `Eres un locutor de radio para el stream de ${streamerName}. Juego: ${currentGame}. Instrucción: ${customInstructions}. Presenta la canción "${track.title}" con estilo profesional en 10 segundos.`;
                 
                 try {
-                    // Texto: Usando gemini-2.5-flash-preview-09-2025
-                    const textRes = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    // Texto: Usando gemini-1.5-flash-latest
+                    const textRes = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            contents: [{ parts: [{ text: "Escribe la presentación de radio." }] }],
-                            systemInstruction: { parts: [{ text: systemPrompt }] }
+                            contents: [{ parts: [{ text: promptText }] }]
                         })
                     });
 
                     const script = textRes.candidates?.[0]?.content?.parts?.[0]?.text || "¡Suban el volumen!";
 
-                    // Audio: Usando gemini-2.5-flash-preview-tts
+                    // Audio: Usando modelo específico TTS
                     const ttsRes = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -137,19 +134,19 @@
                 <div className="min-h-screen flex items-center justify-center p-6">
                     <div className="glass p-10 rounded-[3.5rem] w-full max-w-4xl shadow-2xl flex flex-col md:flex-row gap-10 neon-border">
                         <div className="flex-1 space-y-6">
-                            <h1 className="text-4xl font-black italic tracking-tighter uppercase">RADIO <span className="text-purple-500">STUDIO</span></h1>
+                            <h1 className="text-4xl font-black italic uppercase tracking-tighter">RADIO <span className="text-purple-500">STUDIO</span></h1>
                             <div className="grid grid-cols-2 gap-4">
                                 <input type="text" value={streamerName} onChange={e=>setStreamerName(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-4 py-3 text-sm outline-none focus:border-purple-600" placeholder="Nombre"/>
                                 <input type="text" value={currentGame} onChange={e=>setCurrentGame(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-4 py-3 text-sm outline-none focus:border-purple-600" placeholder="Juego"/>
                             </div>
                             <div className="bg-zinc-950 p-5 rounded-[2rem] border border-zinc-900">
-                                <input type="file" accept="audio/mpeg" multiple onChange={handleFilesUpload} className="text-xs text-zinc-400 file:bg-purple-600 file:text-white file:border-0 file:rounded-full file:px-5 file:py-2 file:mr-4 cursor-pointer w-full"/>
+                                <input type="file" accept="audio/mpeg" multiple onChange={handleFilesUpload} className="text-xs text-zinc-400 file:bg-purple-600 file:text-white file:border-0 file:rounded-full file:px-5 file:py-2 cursor-pointer w-full"/>
                             </div>
-                            <textarea value={customInstructions} onChange={e=>setCustomInstructions(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-3xl px-4 py-4 text-sm h-24 outline-none focus:border-purple-600" placeholder="Instrucciones del locutor..."></textarea>
+                            <textarea value={customInstructions} onChange={e=>setCustomInstructions(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-3xl px-4 py-4 text-sm h-24 outline-none focus:border-purple-600" placeholder="Instrucciones..."></textarea>
                             <button onClick={generatePresentation} disabled={isGenerating || currentIndex === null} className="w-full py-6 bg-purple-600 rounded-[2.5rem] font-black uppercase hover:bg-purple-500 transition-all shadow-lg disabled:opacity-50">
-                                {isGenerating ? 'GRABANDO...' : 'PRESENTAR CANCIÓN'}
+                                {isGenerating ? 'IA TRABAJANDO...' : 'PRESENTAR CANCIÓN'}
                             </button>
-                            {error && <p className="text-red-500 text-[10px] font-bold text-center bg-red-500/10 p-3 rounded-2xl border border-red-500/20">{error}</p>}
+                            {error && <div className="text-red-500 text-[10px] font-bold text-center bg-red-500/10 p-3 rounded-2xl border border-red-500/20">{error}</div>}
                         </div>
                         <div className="w-full md:w-80 bg-zinc-950/30 rounded-[3rem] border border-zinc-800 flex flex-col h-[400px]">
                             <div className="p-6 border-b border-zinc-800/50 text-[11px] font-black text-zinc-500 uppercase tracking-widest">Playlist</div>
