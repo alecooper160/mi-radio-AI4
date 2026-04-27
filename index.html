@@ -35,14 +35,17 @@
             const [error, setError] = useState('');
             
             const audioRef = useRef(null);
+            // IMPORTANTE: Asegúrate de que esta variable tenga tu API KEY de Google Gemini
             const apiKey = ""; 
 
-            // Función de reintento obligatoria para la API
             const fetchWithRetry = async (url, options, retries = 5, backoff = 1000) => {
                 for (let i = 0; i < retries; i++) {
                     try {
                         const response = await fetch(url, options);
-                        if (!response.ok) throw new Error(`Error: ${response.status}`);
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.error?.message || `Error: ${response.status}`);
+                        }
                         return await response.json();
                     } catch (err) {
                         if (i === retries - 1) throw err;
@@ -56,7 +59,7 @@
                 const newTracks = files.map(file => ({
                     id: crypto.randomUUID(),
                     title: file.name.replace(/\.[^/.]+$/, ""),
-                    artist: "Local Track",
+                    artist: "Pista Local",
                     url: URL.createObjectURL(file)
                 }));
                 setPlaylist(prev => [...prev, ...newTracks]);
@@ -100,30 +103,36 @@
             };
 
             const generatePresentation = async () => {
+                if (!apiKey) {
+                    setError('Falta la API KEY en el código.');
+                    return;
+                }
                 if (isGenerating || currentIndex === null) return;
+                
                 setIsGenerating(true);
                 setError('');
 
                 const currentTrack = playlist[currentIndex];
-                const systemPrompt = `Eres un locutor de radio carismático en el stream de ${streamerName}. 
-                Contexto: Están jugando ${currentGame}. Instrucción: ${customInstructions}.
-                TAREA: Presenta la canción "${currentTrack.title}" de forma épica y profesional.
-                Dura máximo 15 segundos. No digas que eres una IA. ¡Habla directamente a la audiencia!`;
+                const systemPrompt = `Eres un locutor de radio carismático y profesional en el stream de ${streamerName}. 
+                Contexto actual: Están jugando ${currentGame}. 
+                Instrucción del usuario: ${customInstructions}.
+                TAREA: Presenta la canción titulada "${currentTrack.title}" de forma épica. 
+                Dura máximo 15 segundos. Sé directo, entusiasta y no menciones que eres una IA.`;
                 
                 try {
-                    // 1. Generar el Guion
+                    // 1. Generar Guion de Locución
                     const textData = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            contents: [{ parts: [{ text: "Presenta la canción ahora." }] }],
+                            contents: [{ parts: [{ text: "Genera la presentación para la radio ahora." }] }],
                             systemInstruction: { parts: [{ text: systemPrompt }] }
                         })
                     });
 
-                    const script = textData.candidates?.[0]?.content?.parts?.[0]?.text || "¡Suban el volumen!";
+                    const script = textData.candidates?.[0]?.content?.parts?.[0]?.text || "¡Suban el volumen, esto es Radio Stream!";
 
-                    // 2. Convertir a Voz (TTS)
+                    // 2. Convertir Guion a Audio (TTS)
                     const ttsData = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -148,9 +157,12 @@
                         const aiAudio = new Audio(URL.createObjectURL(wavBlob));
                         aiAudio.volume = 1.0;
                         aiAudio.play();
+                    } else {
+                        throw new Error("No se recibió audio de la IA");
                     }
                 } catch (e) {
-                    setError('La cabina de radio está ocupada. Intenta de nuevo.');
+                    console.error(e);
+                    setError(e.message.includes('API key') ? 'Error: API Key no válida o expirada.' : 'Error de conexión con la cabina. Reintenta.');
                 } finally {
                     setIsGenerating(false);
                 }
@@ -163,12 +175,12 @@
                         <div className="flex-1 space-y-6">
                             <div className="flex items-center gap-3">
                                 <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse shadow-[0_0_10px_red]"></div>
-                                <h1 className="text-3xl font-black tracking-tighter uppercase italic italic">LIVE <span className="text-purple-500">RADIO</span></h1>
+                                <h1 className="text-3xl font-black tracking-tighter uppercase italic leading-none">RADIO <span className="text-purple-500">STUDIO</span></h1>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Locutor para</label>
+                                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Streamer</label>
                                     <input type="text" value={streamerName} onChange={(e) => setStreamerName(e.target.value)} className="w-full bg-black border border-zinc-800 rounded-2xl px-4 py-2 text-sm outline-none focus:border-purple-600 transition-all"/>
                                 </div>
                                 <div>
@@ -178,39 +190,47 @@
                             </div>
 
                             <div className="bg-zinc-900/40 p-4 rounded-3xl border border-zinc-800">
-                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-2">Cargar Música (MP3)</label>
+                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-2">Importar Archivos MP3</label>
                                 <input type="file" accept="audio/mpeg" multiple onChange={handleFilesUpload} className="w-full text-xs text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700 cursor-pointer"/>
                             </div>
 
-                            <textarea value={customInstructions} onChange={(e) => setCustomInstructions(e.target.value)} placeholder="Instrucciones para la IA..." className="w-full bg-black border border-zinc-800 rounded-2xl px-4 py-3 text-sm outline-none focus:border-purple-600 resize-none h-20"></textarea>
+                            <div>
+                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Instrucciones Locutor</label>
+                                <textarea value={customInstructions} onChange={(e) => setCustomInstructions(e.target.value)} placeholder="Ej: ¡Manda saludos a los subs!" className="w-full bg-black border border-zinc-800 rounded-2xl px-4 py-3 text-sm outline-none focus:border-purple-600 resize-none h-20"></textarea>
+                            </div>
 
                             <button onClick={generatePresentation} disabled={isGenerating || currentIndex === null} className={`w-full py-5 rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] transition-all ${isGenerating ? 'bg-zinc-800 text-zinc-600 animate-pulse' : 'bg-purple-600 hover:bg-purple-500 text-white shadow-lg active:scale-95'}`}>
-                                {isGenerating ? 'LOCUTOR GRABANDO...' : 'PRESENTAR CANCIÓN'}
+                                {isGenerating ? 'AI GRABANDO...' : 'PRESENTAR CANCIÓN'}
                             </button>
-                            {error && <p className="text-red-500 text-[10px] font-bold text-center uppercase tracking-tighter">{error}</p>}
+                            {error && <p className="text-red-400 text-[11px] font-bold text-center uppercase tracking-tight">{error}</p>}
                         </div>
 
                         <div className="w-full md:w-72 flex flex-col bg-black/40 rounded-[2rem] border border-zinc-800 overflow-hidden">
                             <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/20">
-                                <span className="text-[10px] font-bold text-zinc-500 uppercase">Lista de Temas</span>
+                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">Playlist Actual</span>
                                 <span className="text-[10px] font-bold text-purple-500">{playlist.length}</span>
                             </div>
                             
                             <div className="flex-1 overflow-y-auto custom-scrollbar h-64 p-2 space-y-1">
-                                {playlist.map((track, idx) => (
-                                    <div key={track.id} onClick={() => {setCurrentIndex(idx); setIsPlaying(true);}} className={`p-3 rounded-xl cursor-pointer transition-all border border-transparent ${currentIndex === idx ? 'active-track border-purple-500/30' : 'hover:bg-zinc-900'}`}>
-                                        <p className={`text-xs font-bold truncate ${currentIndex === idx ? 'text-white' : 'text-zinc-500'}`}>{track.title}</p>
-                                    </div>
-                                ))}
+                                {playlist.length === 0 ? (
+                                    <p className="text-[10px] text-zinc-700 font-bold uppercase text-center mt-10">Sin archivos</p>
+                                ) : (
+                                    playlist.map((track, idx) => (
+                                        <div key={track.id} onClick={() => {setCurrentIndex(idx); setIsPlaying(true);}} className={`p-3 rounded-xl cursor-pointer transition-all border border-transparent ${currentIndex === idx ? 'active-track border-purple-500/30' : 'hover:bg-zinc-900'}`}>
+                                            <p className={`text-xs font-bold truncate ${currentIndex === idx ? 'text-white' : 'text-zinc-500'}`}>{track.title}</p>
+                                        </div>
+                                    ))
+                                )}
                             </div>
 
                             <div className="p-4 bg-zinc-900/50 border-t border-zinc-800">
                                 <div className="flex items-center justify-between">
-                                    <button onClick={togglePlay} className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center hover:scale-105 transition-all shadow-lg">
+                                    <button onClick={togglePlay} className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center hover:scale-110 transition-all shadow-lg active:scale-90">
                                         {isPlaying ? <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> : <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="ml-1"><path d="M5 3l14 9-14 9V3z"/></svg>}
                                     </button>
-                                    <div className="text-right overflow-hidden ml-4">
-                                        <p className="text-[10px] text-zinc-500 font-bold uppercase truncate">{currentIndex !== null ? playlist[currentIndex].title : "OFF AIR"}</p>
+                                    <div className="text-right overflow-hidden ml-4 flex-1">
+                                        <p className="text-[9px] text-purple-500 font-bold uppercase tracking-widest animate-pulse">On Air</p>
+                                        <p className="text-[10px] text-white font-bold truncate uppercase">{currentIndex !== null ? playlist[currentIndex].title : "Radio Off"}</p>
                                     </div>
                                 </div>
                                 {currentIndex !== null && <audio ref={audioRef} src={playlist[currentIndex].url} onEnded={() => setCurrentIndex((currentIndex + 1) % playlist.length)} className="hidden" />}
