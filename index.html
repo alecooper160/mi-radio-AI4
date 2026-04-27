@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Radio Host - MP3 Playlist</title>
+    <title>AI Radio Host - Locutor MP3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -15,6 +15,7 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
         .active-track { background: rgba(168, 85, 247, 0.1); border-color: rgba(168, 85, 247, 0.4); }
+        .neon-glow { box-shadow: 0 0 15px rgba(168, 85, 247, 0.2); }
     </style>
 </head>
 <body>
@@ -26,56 +27,53 @@
         const App = () => {
             const [streamerName, setStreamerName] = useState('Elizabeth');
             const [currentGame, setCurrentGame] = useState('League of Legends');
-            const [customInstructions, setCustomInstructions] = useState('¡Estamos imparables hoy!');
+            const [customInstructions, setCustomInstructions] = useState('¡Saluda con mucha energía!');
             const [isGenerating, setIsGenerating] = useState(false);
-            
             const [playlist, setPlaylist] = useState([]);
             const [currentIndex, setCurrentIndex] = useState(null);
             const [isPlaying, setIsPlaying] = useState(false);
+            const [error, setError] = useState('');
             
             const audioRef = useRef(null);
             const apiKey = ""; 
 
+            // Función de reintento obligatoria para la API
+            const fetchWithRetry = async (url, options, retries = 5, backoff = 1000) => {
+                for (let i = 0; i < retries; i++) {
+                    try {
+                        const response = await fetch(url, options);
+                        if (!response.ok) throw new Error(`Error: ${response.status}`);
+                        return await response.json();
+                    } catch (err) {
+                        if (i === retries - 1) throw err;
+                        await new Promise(r => setTimeout(r, backoff * Math.pow(2, i)));
+                    }
+                }
+            };
+
             const handleFilesUpload = (e) => {
                 const files = Array.from(e.target.files);
-                const newTracks = files.map(file => {
-                    const fileName = file.name.replace(/\.[^/.]+$/, "");
-                    const parts = fileName.split("-");
-                    return {
-                        id: crypto.randomUUID(),
-                        title: parts.length > 1 ? parts[1].trim() : fileName,
-                        artist: parts.length > 1 ? parts[0].trim() : "Artista desconocido",
-                        url: URL.createObjectURL(file)
-                    };
-                });
-                
+                const newTracks = files.map(file => ({
+                    id: crypto.randomUUID(),
+                    title: file.name.replace(/\.[^/.]+$/, ""),
+                    artist: "Local Track",
+                    url: URL.createObjectURL(file)
+                }));
                 setPlaylist(prev => [...prev, ...newTracks]);
-                if (currentIndex === null && newTracks.length > 0) {
-                    setCurrentIndex(playlist.length);
-                }
+                if (currentIndex === null && newTracks.length > 0) setCurrentIndex(0);
             };
 
             const togglePlay = () => {
                 if (currentIndex === null) return;
-                if (isPlaying) {
-                    audioRef.current.pause();
-                } else {
-                    audioRef.current.play();
-                }
+                isPlaying ? audioRef.current.pause() : audioRef.current.play();
                 setIsPlaying(!isPlaying);
-            };
-
-            const playTrack = (index) => {
-                setCurrentIndex(index);
-                setIsPlaying(true);
-                // React updates state asynchronously, so we handle the actual play in a useEffect or small timeout
             };
 
             useEffect(() => {
                 if (currentIndex !== null && isPlaying && audioRef.current) {
-                    audioRef.current.play().catch(e => console.log("User interaction required"));
+                    audioRef.current.play().catch(() => setIsPlaying(false));
                 }
-            }, [currentIndex, isPlaying]);
+            }, [currentIndex]);
 
             const pcmToWav = (pcmData, sampleRate) => {
                 const buffer = new ArrayBuffer(44 + pcmData.length * 2);
@@ -104,23 +102,29 @@
             const generatePresentation = async () => {
                 if (isGenerating || currentIndex === null) return;
                 setIsGenerating(true);
+                setError('');
 
                 const currentTrack = playlist[currentIndex];
-                const systemPrompt = `Eres un locutor de radio FM profesional para el stream de ${streamerName}. Están jugando ${currentGame}. Instrucción: ${customInstructions}. Presenta la canción "${currentTrack.title}" de "${currentTrack.artist}" con mucha energía en un máximo de 15 segundos.`;
+                const systemPrompt = `Eres un locutor de radio carismático en el stream de ${streamerName}. 
+                Contexto: Están jugando ${currentGame}. Instrucción: ${customInstructions}.
+                TAREA: Presenta la canción "${currentTrack.title}" de forma épica y profesional.
+                Dura máximo 15 segundos. No digas que eres una IA. ¡Habla directamente a la audiencia!`;
                 
                 try {
-                    const textRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    // 1. Generar el Guion
+                    const textData = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            contents: [{ parts: [{ text: "Genera la intro de locutor de radio." }] }],
+                            contents: [{ parts: [{ text: "Presenta la canción ahora." }] }],
                             systemInstruction: { parts: [{ text: systemPrompt }] }
                         })
                     });
-                    const textData = await textRes.json();
-                    const script = textData.candidates?.[0]?.content?.parts?.[0]?.text || "¡Suban el volumen, esto es Radio Stream!";
 
-                    const ttsRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
+                    const script = textData.candidates?.[0]?.content?.parts?.[0]?.text || "¡Suban el volumen!";
+
+                    // 2. Convertir a Voz (TTS)
+                    const ttsData = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -131,7 +135,7 @@
                             }
                         })
                     });
-                    const ttsData = await ttsRes.json();
+
                     const pcmBase64 = ttsData.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
                     
                     if (pcmBase64) {
@@ -142,137 +146,74 @@
                         }
                         const wavBlob = pcmToWav(pcmArray, 24000);
                         const aiAudio = new Audio(URL.createObjectURL(wavBlob));
+                        aiAudio.volume = 1.0;
                         aiAudio.play();
                     }
                 } catch (e) {
-                    console.error(e);
+                    setError('La cabina de radio está ocupada. Intenta de nuevo.');
                 } finally {
                     setIsGenerating(false);
                 }
             };
 
-            const nextTrack = () => {
-                if (playlist.length === 0) return;
-                const nextIdx = (currentIndex + 1) % playlist.length;
-                setCurrentIndex(nextIdx);
-                setIsPlaying(true);
-            };
-
             return (
                 <div className="min-h-screen flex items-center justify-center p-4">
-                    <div className="glass p-8 rounded-[3rem] w-full max-w-2xl shadow-2xl flex flex-col md:flex-row gap-8">
+                    <div className="glass p-8 rounded-[3rem] w-full max-w-3xl shadow-2xl flex flex-col md:flex-row gap-8 neon-glow">
                         
-                        {/* Panel de Controles Izquierdo */}
                         <div className="flex-1 space-y-6">
-                            <div className="text-left">
-                                <h1 className="text-3xl font-black tracking-tighter uppercase italic leading-none">STREAM <span className="text-purple-500 block">RADIO HOST</span></h1>
-                                <p className="text-zinc-500 text-[10px] font-bold mt-2 uppercase tracking-[0.3em]">MP3 Studio Edition</p>
+                            <div className="flex items-center gap-3">
+                                <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse shadow-[0_0_10px_red]"></div>
+                                <h1 className="text-3xl font-black tracking-tighter uppercase italic italic">LIVE <span className="text-purple-500">RADIO</span></h1>
                             </div>
 
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="text-[10px] font-black text-zinc-500 uppercase mb-1 block tracking-wider">Streamer</label>
-                                        <input type="text" value={streamerName} onChange={(e) => setStreamerName(e.target.value)} className="w-full bg-black border border-zinc-800 rounded-2xl px-4 py-2 text-sm outline-none focus:border-purple-600 transition-all"/>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-black text-zinc-500 uppercase mb-1 block tracking-wider">Juego</label>
-                                        <input type="text" value={currentGame} onChange={(e) => setCurrentGame(e.target.value)} className="w-full bg-black border border-zinc-800 rounded-2xl px-4 py-2 text-sm outline-none focus:border-purple-600 transition-all"/>
-                                    </div>
-                                </div>
-                                
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-[10px] font-black text-zinc-500 uppercase mb-1 block tracking-wider">Añadir MP3s a la lista</label>
-                                    <div className="relative group">
-                                        <input 
-                                            type="file" 
-                                            accept="audio/mpeg" 
-                                            multiple
-                                            onChange={handleFilesUpload} 
-                                            className="w-full bg-black border border-zinc-800 rounded-2xl px-4 py-3 text-sm outline-none group-hover:border-purple-500/50 transition-all file:hidden cursor-pointer"
-                                        />
-                                        <div className="absolute right-4 top-3 pointer-events-none text-purple-500">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>
-                                        </div>
-                                    </div>
+                                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Locutor para</label>
+                                    <input type="text" value={streamerName} onChange={(e) => setStreamerName(e.target.value)} className="w-full bg-black border border-zinc-800 rounded-2xl px-4 py-2 text-sm outline-none focus:border-purple-600 transition-all"/>
                                 </div>
-
                                 <div>
-                                    <label className="text-[10px] font-black text-zinc-500 uppercase mb-1 block tracking-wider">Contexto para la IA</label>
-                                    <textarea value={customInstructions} onChange={(e) => setCustomInstructions(e.target.value)} className="w-full bg-black border border-zinc-800 rounded-2xl px-4 py-2 text-sm outline-none focus:border-purple-600 resize-none" rows="2"></textarea>
+                                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Juego</label>
+                                    <input type="text" value={currentGame} onChange={(e) => setCurrentGame(e.target.value)} className="w-full bg-black border border-zinc-800 rounded-2xl px-4 py-2 text-sm outline-none focus:border-purple-600 transition-all"/>
                                 </div>
                             </div>
 
-                            <button 
-                                onClick={generatePresentation}
-                                disabled={isGenerating || currentIndex === null}
-                                className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-xl ${isGenerating || currentIndex === null ? 'bg-zinc-900 text-zinc-700 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-900/40 active:scale-95'}`}
-                            >
-                                {isGenerating ? 'IA GRABANDO INTRO...' : 'PRESENTAR CANCIÓN (IA)'}
+                            <div className="bg-zinc-900/40 p-4 rounded-3xl border border-zinc-800">
+                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-2">Cargar Música (MP3)</label>
+                                <input type="file" accept="audio/mpeg" multiple onChange={handleFilesUpload} className="w-full text-xs text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700 cursor-pointer"/>
+                            </div>
+
+                            <textarea value={customInstructions} onChange={(e) => setCustomInstructions(e.target.value)} placeholder="Instrucciones para la IA..." className="w-full bg-black border border-zinc-800 rounded-2xl px-4 py-3 text-sm outline-none focus:border-purple-600 resize-none h-20"></textarea>
+
+                            <button onClick={generatePresentation} disabled={isGenerating || currentIndex === null} className={`w-full py-5 rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] transition-all ${isGenerating ? 'bg-zinc-800 text-zinc-600 animate-pulse' : 'bg-purple-600 hover:bg-purple-500 text-white shadow-lg active:scale-95'}`}>
+                                {isGenerating ? 'LOCUTOR GRABANDO...' : 'PRESENTAR CANCIÓN'}
                             </button>
+                            {error && <p className="text-red-500 text-[10px] font-bold text-center uppercase tracking-tighter">{error}</p>}
                         </div>
 
-                        {/* Panel de Playlist Derecho */}
-                        <div className="w-full md:w-72 flex flex-col">
-                            <div className="mb-4 flex items-center justify-between">
-                                <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Playlist Local</h3>
-                                <span className="text-[10px] text-purple-500 font-bold">{playlist.length} TEMAS</span>
+                        <div className="w-full md:w-72 flex flex-col bg-black/40 rounded-[2rem] border border-zinc-800 overflow-hidden">
+                            <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/20">
+                                <span className="text-[10px] font-bold text-zinc-500 uppercase">Lista de Temas</span>
+                                <span className="text-[10px] font-bold text-purple-500">{playlist.length}</span>
+                            </div>
+                            
+                            <div className="flex-1 overflow-y-auto custom-scrollbar h-64 p-2 space-y-1">
+                                {playlist.map((track, idx) => (
+                                    <div key={track.id} onClick={() => {setCurrentIndex(idx); setIsPlaying(true);}} className={`p-3 rounded-xl cursor-pointer transition-all border border-transparent ${currentIndex === idx ? 'active-track border-purple-500/30' : 'hover:bg-zinc-900'}`}>
+                                        <p className={`text-xs font-bold truncate ${currentIndex === idx ? 'text-white' : 'text-zinc-500'}`}>{track.title}</p>
+                                    </div>
+                                ))}
                             </div>
 
-                            <div className="flex-1 bg-zinc-950 border border-zinc-900 rounded-3xl overflow-hidden flex flex-col h-[320px]">
-                                <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
-                                    {playlist.length === 0 ? (
-                                        <div className="h-full flex items-center justify-center text-center p-4">
-                                            <p className="text-zinc-700 text-[10px] font-bold uppercase leading-relaxed">Sube archivos MP3 para armar tu radio</p>
-                                        </div>
-                                    ) : (
-                                        playlist.map((track, index) => (
-                                            <div 
-                                                key={track.id} 
-                                                onClick={() => playTrack(index)}
-                                                className={`p-3 rounded-2xl border border-transparent cursor-pointer transition-all hover:bg-zinc-900 ${currentIndex === index ? 'active-track' : ''}`}
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`w-2 h-2 rounded-full ${currentIndex === index && isPlaying ? 'bg-purple-500 animate-pulse' : 'bg-zinc-800'}`}></div>
-                                                    <div className="overflow-hidden">
-                                                        <p className={`text-xs font-bold truncate ${currentIndex === index ? 'text-white' : 'text-zinc-400'}`}>{track.title}</p>
-                                                        <p className="text-[9px] text-zinc-600 truncate uppercase">{track.artist}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-
-                                {/* Mini Player Bottom */}
-                                <div className="p-4 bg-zinc-900/50 border-t border-zinc-800">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <button onClick={togglePlay} className="w-10 h-10 bg-white text-black rounded-full flex items-center justify-center hover:scale-105 transition-transform shadow-lg">
-                                            {isPlaying ? (
-                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-                                            ) : (
-                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5"><path d="M5 3l14 9-14 9V3z"/></svg>
-                                            )}
-                                        </button>
-                                        <button onClick={nextTrack} className="text-zinc-500 hover:text-white transition-colors">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
-                                        </button>
-                                        <div className="text-right flex-1 ml-4 overflow-hidden">
-                                            <p className="text-[8px] text-purple-500 font-bold uppercase tracking-widest truncate">Live</p>
-                                            <p className="text-[10px] text-white font-bold truncate leading-none mt-1">
-                                                {currentIndex !== null ? playlist[currentIndex].title : "Radio Off"}
-                                            </p>
-                                        </div>
+                            <div className="p-4 bg-zinc-900/50 border-t border-zinc-800">
+                                <div className="flex items-center justify-between">
+                                    <button onClick={togglePlay} className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center hover:scale-105 transition-all shadow-lg">
+                                        {isPlaying ? <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> : <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="ml-1"><path d="M5 3l14 9-14 9V3z"/></svg>}
+                                    </button>
+                                    <div className="text-right overflow-hidden ml-4">
+                                        <p className="text-[10px] text-zinc-500 font-bold uppercase truncate">{currentIndex !== null ? playlist[currentIndex].title : "OFF AIR"}</p>
                                     </div>
-                                    {currentIndex !== null && (
-                                        <audio 
-                                            ref={audioRef} 
-                                            src={playlist[currentIndex].url} 
-                                            onEnded={nextTrack} 
-                                            className="hidden" 
-                                        />
-                                    )}
                                 </div>
+                                {currentIndex !== null && <audio ref={audioRef} src={playlist[currentIndex].url} onEnded={() => setCurrentIndex((currentIndex + 1) % playlist.length)} className="hidden" />}
                             </div>
                         </div>
                     </div>
