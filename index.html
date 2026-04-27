@@ -27,23 +27,19 @@
             const [playlistUrl, setPlaylistUrl] = useState('');
             const [embedUrl, setEmbedUrl] = useState('');
             const [isGenerating, setIsGenerating] = useState(false);
+            const [errorMsg, setErrorMsg] = useState('');
             const apiKey = ""; 
 
-            // Lógica para convertir enlaces normales en reproductores (Embeds)
             useEffect(() => {
                 if (!playlistUrl) {
                     setEmbedUrl('');
                     return;
                 }
-
-                // Detectar Spotify
                 if (playlistUrl.includes('spotify.com')) {
                     const id = playlistUrl.split('/').pop().split('?')[0];
                     const type = playlistUrl.includes('playlist') ? 'playlist' : 'track';
                     setEmbedUrl(`https://open.spotify.com/embed/${type}/${id}?utm_source=generator&theme=0`);
-                } 
-                // Detectar YouTube
-                else if (playlistUrl.includes('youtube.com') || playlistUrl.includes('youtu.be')) {
+                } else if (playlistUrl.includes('youtube.com') || playlistUrl.includes('youtu.be')) {
                     let id = "";
                     if (playlistUrl.includes('v=')) {
                         id = playlistUrl.split('v=')[1].split('&')[0];
@@ -53,6 +49,20 @@
                     setEmbedUrl(`https://www.youtube.com/embed/${id}`);
                 }
             }, [playlistUrl]);
+
+            const fetchWithRetry = async (url, options, retries = 5, backoff = 1000) => {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return await response.json();
+                } catch (error) {
+                    if (retries > 0) {
+                        await new Promise(resolve => setTimeout(resolve, backoff));
+                        return fetchWithRetry(url, options, retries - 1, backoff * 2);
+                    }
+                    throw error;
+                }
+            };
 
             const pcmToWav = (pcmData, sampleRate) => {
                 const buffer = new ArrayBuffer(44 + pcmData.length * 2);
@@ -81,22 +91,23 @@
             const generatePresentation = async () => {
                 if (isGenerating) return;
                 setIsGenerating(true);
+                setErrorMsg('');
 
-                const systemPrompt = `Eres un locutor de radio para el stream de ${streamerName}. Están jugando ${currentGame}. Instrucción extra: ${customInstructions}. Presenta la siguiente canción con mucha energía en 15 segundos.`;
+                const systemPrompt = `Eres un locutor de radio para el stream de ${streamerName}. Están jugando ${currentGame}. Instrucción: ${customInstructions}. Presenta la siguiente canción con mucha energía en 15 segundos.`;
                 
                 try {
-                    const textRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    const textData = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            contents: [{ parts: [{ text: "Empieza la locución ahora." }] }],
+                            contents: [{ parts: [{ text: "Presenta la música." }] }],
                             systemInstruction: { parts: [{ text: systemPrompt }] }
                         })
                     });
-                    const textData = await textRes.json();
-                    const script = textData.candidates?.[0]?.content?.parts?.[0]?.text || "¡Vamos con la música!";
 
-                    const ttsRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
+                    const script = textData.candidates?.[0]?.content?.parts?.[0]?.text || "¡Disfruta la música!";
+
+                    const ttsData = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -107,7 +118,7 @@
                             }
                         })
                     });
-                    const ttsData = await ttsRes.json();
+
                     const pcmBase64 = ttsData.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
                     
                     if (pcmBase64) {
@@ -121,7 +132,7 @@
                         audio.play();
                     }
                 } catch (e) {
-                    console.error("Error:", e);
+                    setErrorMsg('Error de conexión con la IA. Reintenta en unos segundos.');
                 } finally {
                     setIsGenerating(false);
                 }
@@ -164,7 +175,6 @@
                             </div>
                         </div>
 
-                        {/* Player Area */}
                         <div className="player-container bg-zinc-950 rounded-[2rem] border border-zinc-800 mb-8 overflow-hidden flex flex-col items-center justify-center relative">
                             {embedUrl ? (
                                 <iframe 
@@ -186,10 +196,12 @@
                             )}
                         </div>
 
+                        {errorMsg && <p className="text-red-500 text-[10px] text-center mb-4 uppercase font-bold">{errorMsg}</p>}
+
                         <button 
                             onClick={generatePresentation}
                             disabled={isGenerating}
-                            className={`w-full py-5 rounded-[2rem] font-black text-lg tracking-widest transition-all shadow-xl ${isGenerating ? 'bg-zinc-800 text-zinc-600' : 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-900/30 active:scale-95'}`}
+                            className={`w-full py-5 rounded-[2rem] font-black text-lg tracking-widest transition-all shadow-xl ${isGenerating ? 'bg-zinc-800 text-zinc-600 animate-pulse' : 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-900/30 active:scale-95'}`}
                         >
                             {isGenerating ? 'GENERANDO VOZ...' : 'LANZAR INTRO IA'}
                         </button>
