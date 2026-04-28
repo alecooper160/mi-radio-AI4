@@ -91,8 +91,8 @@
                 const promptText = `Eres un locutor de radio para el stream de ${streamerName}. Juego: ${currentGame}. Instrucción: ${customInstructions}. Presenta la canción "${track.title}" con estilo profesional en 10 segundos.`;
                 
                 try {
-                    // Texto: Usando el modelo de preview más estable para este entorno
-                    const textRes = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    // Texto: Usando el modelo estable gemini-1.5-flash
+                    const textRes = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -102,7 +102,7 @@
 
                     const script = textRes.candidates?.[0]?.content?.parts?.[0]?.text || "¡Suban el volumen!";
 
-                    // Audio: TTS
+                    // Audio: TTS (Mantenemos el modelo TTS específico)
                     const ttsRes = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -124,7 +124,7 @@
                         audio.play();
                     }
                 } catch (e) {
-                    setError(`Error: ${e.message}. Intenta de nuevo.`);
+                    setError(`Error: ${e.message}.`);
                 } finally {
                     setIsGenerating(false);
                 }
@@ -144,7 +144,7 @@
                             </div>
                             <textarea value={customInstructions} onChange={e=>setCustomInstructions(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-3xl px-4 py-4 text-sm h-24 outline-none focus:border-purple-600" placeholder="Instrucciones..."></textarea>
                             <button onClick={generatePresentation} disabled={isGenerating || currentIndex === null} className="w-full py-6 bg-purple-600 rounded-[2.5rem] font-black uppercase hover:bg-purple-500 transition-all shadow-lg disabled:opacity-50">
-                                {isGenerating ? 'GENERANDO LOCUCIÓN...' : 'PRESENTAR CANCIÓN'}
+                                {isGenerating ? 'LOCUTOR PENSANDO...' : 'PRESENTAR CANCIÓN'}
                             </button>
                             {error && <div className="text-red-500 text-[10px] font-bold text-center bg-red-500/10 p-3 rounded-2xl border border-red-500/20">{error}</div>}
                         </div>
