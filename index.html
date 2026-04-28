@@ -18,7 +18,7 @@
     <div class="max-w-4xl mx-auto">
         <header class="mb-8 text-center">
             <h1 class="text-4xl font-extrabold text-blue-400 tracking-tighter uppercase">Elizabeth AI Station</h1>
-            <p class="text-slate-400">Locución Dinámica Multi-Modelo</p>
+            <p class="text-slate-400">Locución Dinámica (Producción)</p>
         </header>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -26,7 +26,6 @@
                 <section class="glass p-6 rounded-2xl border border-white/5">
                     <h2 class="font-bold mb-4 text-blue-300 text-xs tracking-widest uppercase">Ajustes de Locución</h2>
                     <div class="space-y-3 text-sm">
-                        <!-- API Key oculta internamente -->
                         <input type="hidden" id="apiKeyInput" value="AIzaSyApkkp1hMsopejJzV5sDXzpcdY0wWHjJT0">
                         
                         <div>
@@ -98,7 +97,6 @@
     <audio id="musicAudio"></audio>
 
     <script>
-        // API Key preconfigurada e integrada
         const defaultApiKey = "AIzaSyApkkp1hMsopejJzV5sDXzpcdY0wWHjJT0"; 
         let playlist = [];
         let currentIndex = -1;
@@ -145,12 +143,6 @@
             if (isIAActive) return;
             
             const activeKey = document.getElementById('apiKeyInput').value || defaultApiKey;
-            if (!activeKey) {
-                log("ERROR: Falta API Key.");
-                musicAudio.play();
-                return;
-            }
-
             setTrack(index);
             isIAActive = true;
             
@@ -164,23 +156,18 @@
             document.getElementById('currentArtist').innerText = "ESCRIBIENDO GUION...";
 
             try {
-                log("Generando guion creativo...");
-                const modelName = "gemini-2.5-flash-preview-09-2025";
+                // Modelo estable para despliegue público
+                const modelName = "gemini-2.0-flash";
                 const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${activeKey}`;
                 
-                const systemPrompt = `Eres Elizabeth, una locutora de radio carismática. 
-                Genera presentaciones cortas, variadas y divertidas. Nunca repitas frases. 
-                Máximo 15-20 segundos. Termina con "¡Dale!".`;
+                log(`Usando modelo: ${modelName}`);
 
-                const userPrompt = `Usuario: ${user}. Juego: ${game}. Canción: "${playlist[index].name}". Contexto: ${extra || 'Enérgico'}. 
-                Escribe tu locución. Solo el texto.`;
-
+                // PASO 1: Guion
                 const textResponse = await fetch(baseUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: userPrompt }] }],
-                        systemInstruction: { parts: [{ text: systemPrompt }] }
+                        contents: [{ parts: [{ text: `Eres Elizabeth, una locutora carismática. Usuario: ${user}. Juego: ${game}. Canción: ${playlist[index].name}. Humor: ${extra}. Genera una presentación variada y breve de máximo 15 segundos. Solo el texto. Termina con ¡Dale!` }] }]
                     })
                 });
 
@@ -190,15 +177,13 @@
                 const script = textData.candidates?.[0]?.content?.parts?.[0]?.text || "¡Disfruta! ¡Dale!";
                 log(`Guion: "${script}"`);
 
+                // PASO 2: Audio
                 document.getElementById('currentArtist').innerText = "GENERANDO AUDIO...";
-
-                log(`Solicitando audio (Voz: ${voice})...`);
-                
                 const audioResponse = await fetch(baseUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: `Di esto: ${script}` }] }],
+                        contents: [{ parts: [{ text: `Di esto exactamente: ${script}` }] }],
                         generationConfig: {
                             responseModalities: ["AUDIO"],
                             speechConfig: { 
@@ -214,17 +199,12 @@
                 if (audioData.error) throw new Error(audioData.error.message);
 
                 const audioPart = audioData.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-                
-                if (!audioPart) {
-                    throw new Error("No se pudo obtener el audio binario.");
-                }
+                if (!audioPart) throw new Error("El modelo no devolvió audio binario.");
 
-                log("Audio listo. Reproduciendo...");
                 const blob = pcmToWavBlob(audioPart.inlineData.data, 24000);
                 const ttsAudio = new Audio(URL.createObjectURL(blob));
 
                 ttsAudio.onended = () => {
-                    log("Fin de locución.");
                     resetUI();
                     musicAudio.play();
                 };
@@ -242,7 +222,7 @@
             isIAActive = false;
             document.getElementById('statusIndicator').style.opacity = "0";
             document.getElementById('playBtn').innerText = "⏸️";
-            document.getElementById('currentArtist').innerText = "REPRODUCIENDO";
+            document.getElementById('currentArtist').innerText = "EN VIVO";
         }
 
         function pcmToWavBlob(base64, rate) {
