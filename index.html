@@ -72,7 +72,7 @@
     </div>
 
     <script>
-        const GEMINI_API_KEY = ""; // Inyectada por el entorno
+        const apiKey = "AIzaSyApkkp1hMsopejJzV5sDXzpcdY0wWHjJT0"; 
         const audioPlayer = document.getElementById('audioPlayer');
         const playBtn = document.getElementById('playBtn');
         let playlist = [];
@@ -104,17 +104,15 @@
             setUI(true, "Generando guion creativo...");
 
             try {
-                // 1. Gemini genera el texto de presentación
                 const prompt = `Escribe una intro de radio dinámica de máximo 20 palabras. Streamer: ${streamer}. Juego: ${game}. Canción: ${song.name}. Instrucciones extra: ${extra}. Termina con emoción.`;
                 const text = await generateText(prompt);
                 
-                // 2. Obtener y reproducir la voz mediante el servidor
                 setUI(true, "Convirtiendo texto a locución...");
                 await obtenerVozYReproducir(text, song);
 
             } catch (e) {
                 console.error("Error en el proceso:", e);
-                setUI(false);
+                setUI(false, "Error: Revisa la conexión o las claves de API.");
                 playBtn.disabled = false;
             }
         });
@@ -122,7 +120,6 @@
         async function obtenerVozYReproducir(textoParaConvertir, song) {
             const voiceId = document.getElementById('voiceId').value;
             
-            // Petición al servidor Node.js según tu estructura
             const respuesta = await fetch('/generar-audio', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -132,44 +129,52 @@
                 })
             });
 
-            if (!respuesta.ok) throw new Error("Error en el servidor de audio");
+            if (!respuesta.ok) throw new Error("Error en el servidor de audio.");
 
             const blob = await respuesta.blob();
             const urlAudioLocutor = URL.createObjectURL(blob);
             
-            // Configurar secuencia de audio
             playBtn.disabled = true;
             document.getElementById('nowPlaying').innerText = `🎙️ Locutor: Presentando...`;
-            document.getElementById('trackDetails').innerText = `Sintonizando para ${document.getElementById('streamerName').value}`;
 
             audioPlayer.src = urlAudioLocutor;
-            audioPlayer.play();
+            audioPlayer.play().catch(err => {
+                console.error("Error al reproducir audio:", err);
+                playSong(song);
+            });
 
-            // Al terminar la voz del locutor, empieza la canción
+            audioPlayer.onended = () => playSong(song);
+        }
+
+        function playSong(song) {
+            document.getElementById('nowPlaying').innerText = `🎵 Sonando: ${song.name}`;
+            audioPlayer.src = song.url;
+            audioPlayer.play();
             audioPlayer.onended = () => {
-                document.getElementById('nowPlaying').innerText = `🎵 Sonando: ${song.name}`;
-                document.getElementById('trackDetails').innerText = `¡Disfruta del tema!`;
-                audioPlayer.src = song.url;
-                audioPlayer.play();
-                
-                audioPlayer.onended = () => {
-                    setUI(false);
-                    playBtn.disabled = false;
-                };
+                setUI(false);
+                playBtn.disabled = false;
             };
         }
 
-        async function generateText(prompt) {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`, {
+        async function generateText(userQuery) {
+            const systemPrompt = "Eres un locutor de radio profesional, carismático y breve.";
+            
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    contents: [{ parts: [{ text: prompt }] }],
-                    systemInstruction: { parts: [{ text: "Eres un locutor de radio pro y breve." }] }
+                    contents: [{ parts: [{ text: userQuery }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] }
                 })
             });
+            
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error?.message || "Fallo en Gemini API");
+            }
+            
             const data = await res.json();
-            return data.candidates[0].content.parts[0].text;
+            return data.candidates?.[0]?.content?.parts?.[0]?.text || "¡Música en el aire!";
         }
 
         function setUI(show, msg) {
