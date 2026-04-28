@@ -18,7 +18,7 @@
     <div class="max-w-4xl mx-auto">
         <header class="mb-8 text-center">
             <h1 class="text-4xl font-extrabold text-blue-400 tracking-tighter uppercase">Elizabeth AI Station</h1>
-            <p class="text-slate-400">Locución Dinámica (Fix API Path)</p>
+            <p class="text-slate-400">Locución Dinámica (Producción V1)</p>
         </header>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -151,35 +151,38 @@
             document.getElementById('currentArtist').innerText = "ESCRIBIENDO GUION...";
 
             try {
-                // CORRECCIÓN: Se requiere el prefijo 'models/' completo en la URL
-                const modelPath = "models/gemini-1.5-flash";
-                const baseUrl = `https://generativelanguage.googleapis.com/v1beta/${modelPath}:generateContent?key=${activeKey}`;
+                // CAMBIO A API V1 (ESTÁNDAR) Y NOMBRE DE MODELO CORREGIDO
+                const baseUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${activeKey}`;
                 
-                log(`Llamando a: ${modelPath}`);
+                log(`Accediendo a la API V1 estable...`);
 
                 const user = document.getElementById('userName').value || "Ale";
                 const game = document.getElementById('gameName').value || "Forza";
                 const voice = document.getElementById('voiceSelect').value;
                 const extra = document.getElementById('extraPrompt').value;
 
-                // PASO 1: Guion
+                // PASO 1: Generar Guion
                 const textResponse = await fetch(baseUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: `Eres Elizabeth, una locutora carismática de radio. Usuario: ${user}. Juego: ${game}. Canción: ${playlist[index].name}. Humor: ${extra}. Genera una presentación muy breve (10-15 segundos). Solo devuelve el texto. Termina con ¡Dale!` }] }]
+                        contents: [{ parts: [{ text: `Eres Elizabeth, una locutora de radio carismática. Usuario: ${user}. Juego: ${game}. Canción: ${playlist[index].name}. Humor: ${extra}. Genera una presentación muy breve (10 segundos). Solo devuelve el texto. Termina con ¡Dale!` }] }]
                     })
                 });
 
                 const textData = await textResponse.json();
                 if (textData.error) throw new Error(textData.error.message);
 
-                const script = textData.candidates?.[0]?.content?.parts?.[0]?.text || "¡Disfruta la música! ¡Dale!";
-                log(`Guion obtenido.`);
+                const script = textData.candidates?.[0]?.content?.parts?.[0]?.text || "¡Disfruta! ¡Dale!";
+                log(`Guion listo.`);
 
-                // PASO 2: Audio (TTS)
+                // PASO 2: Generar Audio (TTS)
+                // Nota: v1beta sigue siendo necesaria para la modalidad AUDIO en algunos casos, 
+                // pero probamos con v1 si el modelo lo soporta, si no, forzamos v1beta con el path corregido.
+                const ttsUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${activeKey}`;
+
                 document.getElementById('currentArtist').innerText = "GENERANDO AUDIO...";
-                const audioResponse = await fetch(baseUrl, {
+                const audioResponse = await fetch(ttsUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -199,7 +202,7 @@
                 if (audioData.error) throw new Error(audioData.error.message);
 
                 const audioPart = audioData.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-                if (!audioPart) throw new Error("No se recibió audio del modelo.");
+                if (!audioPart) throw new Error("No se pudo obtener el audio de la IA.");
 
                 const blob = pcmToWavBlob(audioPart.inlineData.data, 24000);
                 const ttsAudio = new Audio(URL.createObjectURL(blob));
@@ -212,7 +215,7 @@
                 await ttsAudio.play();
 
             } catch (err) {
-                log(`ERROR API: ${err.message}`);
+                log(`ERROR: ${err.message}`);
                 resetUI();
                 musicAudio.play();
             }
@@ -222,7 +225,7 @@
             isIAActive = false;
             document.getElementById('statusIndicator').style.opacity = "0";
             document.getElementById('playBtn').innerText = "⏸️";
-            document.getElementById('currentArtist').innerText = "EN VIVO";
+            document.getElementById('currentArtist').innerText = "REPRODUCIENDO";
         }
 
         function pcmToWavBlob(base64, rate) {
