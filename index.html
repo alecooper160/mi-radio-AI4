@@ -22,11 +22,10 @@
     <div class="max-w-5xl w-full space-y-6">
         <header class="text-center space-y-2">
             <h1 class="text-5xl font-extrabold bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-600 bg-clip-text text-transparent italic">AI RADIO HOST</h1>
-            <p class="text-slate-400 font-light tracking-widest text-xs uppercase">Security Optimized Protocol v2.5</p>
+            <p class="text-slate-400 font-light tracking-widest text-xs uppercase">Security Optimized Protocol v2.6</p>
         </header>
 
         <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Configuración -->
             <section class="glass p-6 rounded-3xl space-y-5 lg:col-span-1">
                 <h2 class="text-lg font-bold text-blue-400 flex items-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
@@ -50,11 +49,10 @@
                             <select id="voiceId" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-sm outline-none"></select>
                         </div>
                     </div>
-                    <textarea id="extraInstructions" rows="3" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-sm outline-none focus:border-blue-500 transition-colors" placeholder="Ej: Estilo enérgico, menciona el sorteo de bits..."></textarea>
+                    <textarea id="extraInstructions" rows="3" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-sm outline-none focus:border-blue-500 transition-colors" placeholder="Ej: Estilo enérgico..."></textarea>
                 </div>
             </section>
 
-            <!-- Diagnóstico y Lista -->
             <section class="lg:col-span-2 space-y-6">
                 <div class="glass p-6 rounded-3xl flex flex-col h-[280px]">
                     <h2 class="text-lg font-bold text-purple-400 flex items-center gap-2 mb-4">
@@ -76,40 +74,30 @@
             </section>
         </main>
 
-        <!-- Player -->
         <footer class="glass p-8 rounded-[40px] shadow-2xl relative overflow-hidden">
             <div id="statusBox" class="hidden absolute top-0 left-0 right-0 p-2 bg-blue-600/10 border-b border-blue-500/20 text-[10px] font-bold text-blue-400 text-center tracking-[0.3em] uppercase">
                 <span id="statusMessage">Procesando</span>
             </div>
-
             <div class="flex flex-col md:flex-row items-center justify-between gap-8 mt-2">
                 <div class="text-center md:text-left flex-1 min-w-0">
                     <h3 id="nowPlaying" class="text-2xl font-black text-white truncate drop-shadow-md">STANDBY</h3>
                     <p id="trackDetails" class="text-sm text-slate-500 font-medium">Sube tu playlist para comenzar la radio</p>
                 </div>
-
                 <div class="flex items-center gap-8">
                     <button id="prevBtn" class="text-slate-400 hover:text-white transition-colors transform active:scale-90">
                         <svg class="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"></path></svg>
                     </button>
-                    
-                    <button id="mainPlayBtn" disabled class="bg-blue-600 hover:bg-blue-500 w-20 h-20 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(37,99,235,0.4)] transition-all disabled:bg-slate-800 disabled:shadow-none transform active:scale-95">
+                    <button id="mainPlayBtn" disabled class="bg-blue-600 hover:bg-blue-500 w-20 h-20 rounded-full flex items-center justify-center transition-all disabled:bg-slate-800 transform active:scale-95">
                         <div id="playIcon"><svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg></div>
                         <div id="pauseIcon" class="hidden"><svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg></div>
                     </button>
-
                     <button id="nextBtn" class="text-slate-400 hover:text-white transition-colors transform active:scale-90">
                         <svg class="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"></path></svg>
                     </button>
                 </div>
-
                 <div class="flex-1 flex justify-end">
                     <div class="audio-wave opacity-0 transition-opacity" id="waveContainer">
-                        <div class="bar" style="animation-delay: 0.1s"></div>
-                        <div class="bar" style="animation-delay: 0.3s"></div>
-                        <div class="bar" style="animation-delay: 0.2s"></div>
-                        <div class="bar" style="animation-delay: 0.4s"></div>
-                        <div class="bar" style="animation-delay: 0.1s"></div>
+                        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
                     </div>
                 </div>
             </div>
@@ -118,15 +106,15 @@
     </div>
 
     <script>
-        // SEGURIDAD: API Key integrada y protocolos
         const CONFIG = {
             GEMINI_KEY: "AIzaSyApkkp1hMsopejJzV5sDXzpcdY0wWHjJT0",
-            MAX_RETRIES: 4,
-            BACKOFF: 1500
+            MODEL_NAME: "gemini-1.5-flash",
+            MAX_RETRIES: 3,
+            BACKOFF: 1000
         };
 
         const voices = {
-            google: [{ id: "Kore", name: "Kore (Femenina)" }, { id: "Zephyr", name: "Zephyr (Masculina)" }],
+            google: [{ id: "Kore", name: "Kore" }, { id: "Zephyr", name: "Zephyr" }],
             elevenlabs: [{ id: "pNInz6obpgDQGcFmaJgB", name: "Adam" }, { id: "Xb7hH9S3oU4shU66pScB", name: "Alice" }]
         };
 
@@ -134,7 +122,6 @@
         const mainPlayBtn = document.getElementById('mainPlayBtn');
         const errorDisplay = document.getElementById('errorDisplay');
         const waveContainer = document.getElementById('waveContainer');
-        
         let playlist = [];
         let currentIndex = -1;
 
@@ -145,20 +132,15 @@
             errorDisplay.prepend(p);
         }
 
-        // PROTOCOLO DE SEGURIDAD: Fetch con reintento exponencial
         async function secureFetch(url, options, attempt = 0) {
             try {
                 const res = await fetch(url, options);
-                if (!res.ok) {
-                    const errorData = await res.json().catch(() => ({}));
-                    throw new Error(errorData.error?.message || `HTTP ${res.status}`);
-                }
-                return await res.json();
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
+                return data;
             } catch (err) {
                 if (attempt < CONFIG.MAX_RETRIES) {
-                    const delay = CONFIG.BACKOFF * Math.pow(2, attempt);
-                    log(`Fallo temporal. Reintentando en ${(delay/1000).toFixed(1)}s...`, 'error');
-                    await new Promise(r => setTimeout(r, delay));
+                    await new Promise(r => setTimeout(r, CONFIG.BACKOFF * Math.pow(2, attempt)));
                     return secureFetch(url, options, attempt + 1);
                 }
                 throw err;
@@ -173,12 +155,10 @@
 
         document.getElementById('musicFiles').addEventListener('change', (e) => {
             const files = Array.from(e.target.files);
-            files.forEach(file => {
-                playlist.push({ name: file.name.replace(/\.[^/.]+$/, ""), blobUrl: URL.createObjectURL(file) });
-            });
+            files.forEach(file => playlist.push({ name: file.name.replace(/\.[^/.]+$/, ""), blobUrl: URL.createObjectURL(file) }));
             document.getElementById('fileCount').innerText = `${playlist.length} Temas`;
-            log(`Playlist actualizada: ${files.length} nuevos archivos.`);
             mainPlayBtn.disabled = playlist.length === 0;
+            log(`Archivos cargados correctamente.`);
         });
 
         async function playTrack(direction = 1) {
@@ -187,34 +167,24 @@
             const song = playlist[currentIndex];
             
             try {
-                setUI(true, "PROTOCOLO IA: GENERANDO GUION");
-                log(`Procesando entrada para: ${song.name}`);
-
+                setUI(true, "GENERANDO PRESENTACIÓN");
                 const streamer = document.getElementById('streamerName').value || "Elizabeth";
                 const game = document.getElementById('gameName').value || "su directo";
-                const extra = document.getElementById('extraInstructions').value;
-                
-                const prompt = `Eres un locutor de radio profesional. Saluda a la audiencia de ${streamer} que está disfrutando de ${game}. Haz una transición creativa para presentar la canción "${song.name}". ${extra}. Sé breve (max 40 palabras).`;
+                const prompt = `Actúa como un locutor de radio. Saluda a la audiencia de ${streamer} que ve ${game}. Presenta la canción "${song.name}". Sé breve (30 palabras).`;
 
-                // 1. Generación de Guion (Gemini)
-                const data = await secureFetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${CONFIG.GEMINI_KEY}`, {
+                const data = await secureFetch(`https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.MODEL_NAME}:generateContent?key=${CONFIG.GEMINI_KEY}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
 
-                const script = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (!script) throw new Error("La IA no pudo generar el texto del guion.");
-                log("Guion generado exitosamente.");
-
-                // 2. Generación de Voz
+                const script = data.candidates[0].content.parts[0].text;
                 const engine = document.getElementById('voiceEngine').value;
                 const voiceId = document.getElementById('voiceId').value;
                 let voiceUrl;
 
                 if (engine === 'google') {
-                    log("Solicitando audio a Google TTS...");
-                    const ttsData = await secureFetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${CONFIG.GEMINI_KEY}`, {
+                    const ttsData = await secureFetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${CONFIG.GEMINI_KEY}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -228,47 +198,36 @@
                     const base64 = ttsData.candidates[0].content.parts[0].inlineData.data;
                     voiceUrl = pcmToWavUrl(base64, 24000);
                 } else {
-                    log("Solicitando ElevenLabs (Proxy Server)...");
                     const res = await fetch('/generar-audio', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ texto: script, voiceId: voiceId })
                     });
-                    if (!res.ok) throw new Error("Error en servidor ElevenLabs");
                     const blob = await res.blob();
                     voiceUrl = URL.createObjectURL(blob);
                 }
 
-                // 3. Secuencia de Reproducción (LOCUTOR -> MÚSICA)
-                document.getElementById('nowPlaying').innerText = "🎙️ LOCUTOR EN EL AIRE";
-                document.getElementById('trackDetails').innerText = "Presentando canción...";
+                document.getElementById('nowPlaying').innerText = "🎙️ PRESENTANDO...";
                 waveContainer.style.opacity = "1";
-                
                 audioPlayer.src = voiceUrl;
                 await audioPlayer.play();
                 toggleIcons(false);
 
                 audioPlayer.onended = () => {
-                    log("Locución finalizada. Iniciando pista musical.");
                     setUI(false);
                     document.getElementById('nowPlaying').innerText = song.name;
-                    document.getElementById('trackDetails').innerText = "Reproduciendo ahora";
                     audioPlayer.src = song.blobUrl;
                     audioPlayer.play();
-                    audioPlayer.onended = () => playTrack(1); // Auto-next
+                    audioPlayer.onended = () => playTrack(1);
                 };
-
             } catch (err) {
-                log(`FALLO CRÍTICO: ${err.message}`, "error");
+                log(err.message, "error");
                 setUI(false);
-                // Fallback: reproducir solo la música
                 audioPlayer.src = song.blobUrl;
                 audioPlayer.play();
-                document.getElementById('nowPlaying').innerText = song.name;
             }
         }
 
-        // Conversor PCM a WAV para Google TTS
         function pcmToWavUrl(base64, rate) {
             const bin = atob(base64);
             const buf = new ArrayBuffer(44 + bin.length);
@@ -290,18 +249,9 @@
 
         document.getElementById('nextBtn').addEventListener('click', () => playTrack(1));
         document.getElementById('prevBtn').addEventListener('click', () => playTrack(-1));
-
-        function toggleIcons(p) { 
-            document.getElementById('playIcon').classList.toggle('hidden', !p); 
-            document.getElementById('pauseIcon').classList.toggle('hidden', p); 
-        }
-        function setUI(s, m) { 
-            document.getElementById('statusBox').classList.toggle('hidden', !s); 
-            document.getElementById('statusMessage').innerText = m; 
-        }
-        
+        function toggleIcons(p) { document.getElementById('playIcon').classList.toggle('hidden', !p); document.getElementById('pauseIcon').classList.toggle('hidden', p); }
+        function setUI(s, m) { document.getElementById('statusBox').classList.toggle('hidden', !s); document.getElementById('statusMessage').innerText = m; }
         updateVoiceList();
-        log("Sistema inicializado. Listo para transmisión.");
     </script>
 </body>
 </html>
