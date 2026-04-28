@@ -3,237 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Radio Host - Producción</title>
+    <title>AI Radio Host - Elizabeth</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background: #0f172a; color: #f8fafc; overflow-x: hidden; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .audio-wave { display: flex; align-items: center; gap: 3px; height: 24px; }
-        .bar { width: 4px; background: #3b82f6; animation: wave 1.2s infinite ease-in-out; border-radius: 2px; }
-        @keyframes wave { 0%, 100% { height: 6px; } 50% { height: 24px; } }
-        .console-text { font-family: 'Fira Code', monospace; font-size: 0.7rem; }
-        .error-msg { color: #f87171; border-left: 2px solid #ef4444; padding-left: 8px; margin-bottom: 4px; }
-        .success-msg { color: #4ade80; border-left: 2px solid #22c55e; padding-left: 8px; margin-bottom: 4px; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background: #0f172a; color: #f8fafc; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+        .on-air-pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+        .debug-panel { background: #000; font-family: 'Courier New', monospace; font-size: 11px; color: #10b981; }
     </style>
 </head>
-<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
-    <div class="max-w-5xl w-full space-y-6">
-        <header class="text-center space-y-2">
-            <h1 class="text-5xl font-extrabold bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-600 bg-clip-text text-transparent italic">AI RADIO HOST</h1>
-            <p class="text-slate-400 font-light tracking-widest text-xs uppercase">Security Optimized Protocol v2.7</p>
+<body class="min-h-screen p-4 md:p-8">
+    <div class="max-w-4xl mx-auto">
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-extrabold text-blue-400 tracking-tighter uppercase">Elizabeth AI Station</h1>
+            <p class="text-slate-400">Voz HD Nativa - Gemini 2.5 TTS</p>
         </header>
 
-        <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <section class="glass p-6 rounded-3xl space-y-5 lg:col-span-1">
-                <h2 class="text-lg font-bold text-blue-400 flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-                    AJUSTES
-                </h2>
-                <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-2">
-                        <input type="text" id="streamerName" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-sm focus:ring-2 ring-blue-500/20 outline-none" placeholder="Elizabeth">
-                        <input type="text" id="gameName" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-sm focus:ring-2 ring-blue-500/20 outline-none" placeholder="Minecraft">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="md:col-span-1 space-y-4">
+                <section class="glass p-6 rounded-2xl border border-white/5">
+                    <h2 class="font-bold mb-4 text-blue-300 text-xs tracking-widest uppercase">Ajustes de Locución</h2>
+                    <div class="space-y-3 text-sm">
+                        <div>
+                            <label class="block text-[10px] text-slate-500 mb-1 font-bold">USUARIO</label>
+                            <input type="text" id="userName" class="w-full bg-slate-900 p-3 rounded-xl border border-slate-700 outline-none focus:border-blue-500" value="Ale">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500 mb-1 font-bold">JUEGO</label>
+                            <input type="text" id="gameName" class="w-full bg-slate-900 p-3 rounded-xl border border-slate-700 outline-none focus:border-blue-500" value="Forza 5">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500 mb-1 font-bold">VOZ NATIVA</label>
+                            <select id="voiceSelect" class="w-full bg-slate-900 p-3 rounded-xl border border-slate-700 outline-none">
+                                <option value="Kore">Kore (Principal)</option>
+                                <option value="Zephyr">Zephyr (Enérgico)</option>
+                                <option value="Callirrhoe">Callirrhoe (Elegante)</option>
+                                <option value="Puck">Puck (Divertido)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500 mb-1 font-bold">ESTILO</label>
+                            <textarea id="extraPrompt" rows="3" class="w-full bg-slate-900 p-3 rounded-xl border border-slate-700 outline-none focus:border-blue-500" placeholder="Ej: Muy graciosa..."></textarea>
+                        </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <select id="voiceEngine" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-sm outline-none" onchange="updateVoiceList()">
-                            <option value="google">Google AI (v2)</option>
-                            <option value="elevenlabs">ElevenLabs</option>
-                        </select>
-                        <select id="voiceId" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-sm outline-none"></select>
-                    </div>
-                </div>
-            </section>
+                </section>
 
-            <section class="lg:col-span-2 space-y-6">
-                <div class="glass p-6 rounded-3xl h-[280px] flex flex-col">
-                    <div id="errorDisplay" class="flex-1 bg-black/40 rounded-2xl p-4 overflow-y-auto console-text border border-white/5 space-y-1">
-                        <p class="text-slate-500 italic">Protocolo iniciado. Sistema listo.</p>
-                    </div>
-                </div>
-                <div class="glass p-4 rounded-3xl flex items-center justify-between gap-4">
-                    <div class="flex-1 border-2 border-dashed border-slate-700 rounded-2xl p-3 text-center relative hover:bg-white/5 transition-all">
-                        <input type="file" id="musicFiles" multiple accept="audio/mpeg" class="absolute inset-0 opacity-0 cursor-pointer">
-                        <span class="text-slate-400 text-sm">Cargar archivos MP3</span>
-                    </div>
-                    <div id="fileCount" class="bg-blue-600/20 text-blue-400 px-4 py-2 rounded-xl text-xs font-bold border border-blue-500/30">0 Temas</div>
-                </div>
-            </section>
-        </main>
+                <section class="glass p-6 rounded-2xl border border-white/5">
+                    <h2 class="font-bold mb-4 text-blue-300 text-xs tracking-widest uppercase">Cargar Música</h2>
+                    <input type="file" id="fileInput" class="text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer" accept="audio/mp3" multiple>
+                </section>
+            </div>
 
-        <footer class="glass p-8 rounded-[40px] shadow-2xl relative overflow-hidden">
-            <div id="statusBox" class="hidden absolute top-0 left-0 right-0 p-2 bg-blue-600/10 border-b border-blue-500/20 text-[10px] font-bold text-blue-400 text-center uppercase tracking-widest">
-                <span id="statusMessage">Procesando</span>
-            </div>
-            <div class="flex flex-col md:flex-row items-center justify-between gap-8 mt-2">
-                <div class="text-center md:text-left flex-1 min-w-0">
-                    <h3 id="nowPlaying" class="text-2xl font-black text-white truncate">RADIO OFFLINE</h3>
-                    <p id="trackDetails" class="text-sm text-slate-500 font-medium">Esperando playlist...</p>
-                </div>
-                <div class="flex items-center gap-8">
-                    <button id="prevBtn" class="text-slate-400 hover:text-white transition-colors transform active:scale-90"><svg class="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"></path></svg></button>
-                    <button id="mainPlayBtn" disabled class="bg-blue-600 hover:bg-blue-500 w-20 h-20 rounded-full flex items-center justify-center transition-all disabled:bg-slate-800 transform active:scale-95">
-                        <div id="playIcon"><svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg></div>
-                        <div id="pauseIcon" class="hidden"><svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg></div>
-                    </button>
-                    <button id="nextBtn" class="text-slate-400 hover:text-white transition-colors transform active:scale-90"><svg class="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"></path></svg></button>
-                </div>
-                <div class="flex-1 flex justify-end">
-                    <div class="audio-wave opacity-0 transition-opacity" id="waveContainer">
-                        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            <div class="md:col-span-2 space-y-4">
+                <div class="glass p-10 rounded-[2.5rem] text-center relative border border-blue-500/30 overflow-hidden">
+                    <div id="statusIndicator" class="absolute top-6 right-6 flex items-center gap-2 opacity-0 transition-opacity duration-500">
+                        <span class="h-2 w-2 rounded-full bg-red-600 on-air-pulse shadow-[0_0_12px_red]"></span>
+                        <span class="text-[10px] font-black text-red-500 uppercase tracking-widest">Al Aire</span>
+                    </div>
+
+                    <div class="w-44 h-44 bg-slate-800 rounded-3xl mx-auto mb-8 flex items-center justify-center border border-slate-700 shadow-inner group transition-all">
+                        <span class="text-6xl group-hover:scale-110 transition-transform" id="artIcon">🎙️</span>
+                    </div>
+
+                    <h3 id="currentTitle" class="text-2xl font-black mb-2 uppercase tracking-tight truncate px-6">Sin música</h3>
+                    <p id="currentArtist" class="text-slate-500 text-sm mb-10 tracking-widest font-bold uppercase">LISTA VACÍA</p>
+
+                    <div class="flex items-center justify-center gap-12">
+                        <button id="prevBtn" class="text-2xl opacity-40 hover:opacity-100 transition-opacity">⏮️</button>
+                        <button id="playBtn" class="w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center text-4xl shadow-[0_0_30px_rgba(37,99,235,0.5)] hover:bg-blue-500 hover:scale-110 active:scale-90 transition-all">▶️</button>
+                        <button id="nextBtn" class="text-2xl opacity-40 hover:opacity-100 transition-opacity">⏭️</button>
                     </div>
                 </div>
+
+                <div class="glass p-6 rounded-3xl max-h-48 overflow-y-auto space-y-2" id="playlist">
+                    <p class="text-center text-slate-600 text-xs italic py-4 font-medium">No hay canciones</p>
+                </div>
             </div>
-            <audio id="audioPlayer" class="hidden"></audio>
-        </footer>
+        </div>
+
+        <div class="mt-6 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl">
+            <div class="bg-slate-900 px-5 py-3 text-[10px] font-black text-emerald-500 flex justify-between items-center border-b border-slate-800">
+                <span class="tracking-[0.2em]">SISTEMA DE LOCUCIÓN ACTIVO</span>
+                <button onclick="document.getElementById('debugOutput').innerText = ''" class="hover:text-white text-[9px]">BORRAR</button>
+            </div>
+            <pre id="debugOutput" class="debug-panel h-48 p-5 overflow-y-auto whitespace-pre-wrap leading-relaxed"></pre>
+        </div>
     </div>
 
+    <audio id="musicAudio"></audio>
+
     <script>
-        const CONFIG = {
-            API_KEY: "AIzaSyApkkp1hMsopejJzV5sDXzpcdY0wWHjJT0",
-            TEXT_MODEL: "gemini-1.5-flash", 
-            TTS_MODEL: "gemini-2.0-flash-exp",
-            RETRIES: 3
-        };
-
-        const voices = {
-            google: [{ id: "Kore", name: "Kore (Femenina)" }, { id: "Zephyr", name: "Zephyr (Masculina)" }],
-            elevenlabs: [{ id: "pNInz6obpgDQGcFmaJgB", name: "Adam" }, { id: "Xb7hH9S3oU4shU66pScB", name: "Alice" }]
-        };
-
-        const audioPlayer = document.getElementById('audioPlayer');
-        const mainPlayBtn = document.getElementById('mainPlayBtn');
-        const errorDisplay = document.getElementById('errorDisplay');
-        const waveContainer = document.getElementById('waveContainer');
+        const apiKey = "";
         let playlist = [];
         let currentIndex = -1;
+        let isIAActive = false;
 
-        function log(msg, type = 'info') {
-            const p = document.createElement('p');
-            p.className = type === 'error' ? 'error-msg' : 'success-msg';
-            p.innerHTML = `<span class="opacity-30 mr-2">${new Date().toLocaleTimeString()}</span> ${msg}`;
-            errorDisplay.prepend(p);
+        const musicAudio = document.getElementById('musicAudio');
+        const debug = document.getElementById('debugOutput');
+
+        function log(msg, obj = null) {
+            const time = new Date().toLocaleTimeString();
+            let text = `[${time}] ${msg}\n`;
+            if (obj) { try { text += JSON.stringify(obj, null, 2) + "\n"; } catch(e) { text += "[Data]\n"; } }
+            debug.innerText += text;
+            debug.scrollTop = debug.scrollHeight;
         }
 
-        async function apiRequest(url, body) {
-            for(let i = 0; i < CONFIG.RETRIES; i++) {
-                try {
-                    const res = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(body)
-                    });
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.error?.message || `Error ${res.status}`);
-                    return data;
-                } catch (e) {
-                    if (i === CONFIG.RETRIES - 1) throw e;
-                    await new Promise(r => setTimeout(r, 1000 * (i + 1)));
-                }
-            }
-        }
-
-        function updateVoiceList() {
-            const engine = document.getElementById('voiceEngine').value;
-            const select = document.getElementById('voiceId');
-            select.innerHTML = voices[engine].map(v => `<option value="${v.id}">${v.name}</option>`).join('');
-        }
-
-        document.getElementById('musicFiles').addEventListener('change', (e) => {
+        document.getElementById('fileInput').addEventListener('change', (e) => {
             const files = Array.from(e.target.files);
-            files.forEach(file => playlist.push({ name: file.name.replace(/\.[^/.]+$/, ""), blobUrl: URL.createObjectURL(file) }));
-            document.getElementById('fileCount').innerText = `${playlist.length} Temas`;
-            mainPlayBtn.disabled = playlist.length === 0;
-            log(`Playlist actualizada con ${files.length} pistas.`);
+            files.forEach(f => playlist.push({ name: f.name.replace('.mp3', ''), url: URL.createObjectURL(f) }));
+            renderPlaylist();
+            if (currentIndex === -1) setTrack(0);
         });
 
-        async function playTrack(direction = 1) {
-            if (playlist.length === 0) return;
-            currentIndex = (currentIndex + direction + playlist.length) % playlist.length;
-            const song = playlist[currentIndex];
+        function renderPlaylist() {
+            const container = document.getElementById('playlist');
+            container.innerHTML = playlist.length ? '' : '<p class="text-center text-slate-600 text-xs italic py-4">No hay canciones</p>';
+            playlist.forEach((t, i) => {
+                const div = document.createElement('div');
+                div.className = `p-3 text-xs font-bold cursor-pointer rounded-xl transition-all ${i === currentIndex ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'hover:bg-slate-800 text-slate-400'}`;
+                div.innerText = `${String(i+1).padStart(2, '0')}. ${t.name.toUpperCase()}`;
+                div.onclick = () => { if(!isIAActive) playWithIA(i); };
+                container.appendChild(div);
+            });
+        }
+
+        function setTrack(i) {
+            currentIndex = i;
+            musicAudio.src = playlist[i].url;
+            document.getElementById('currentTitle').innerText = playlist[i].name;
+            document.getElementById('currentArtist').innerText = "LISTO";
+        }
+
+        async function playWithIA(index) {
+            if (isIAActive) return;
+            setTrack(index);
+            isIAActive = true;
             
+            const user = document.getElementById('userName').value || "Ale";
+            const game = document.getElementById('gameName').value || "Forza";
+            const voice = document.getElementById('voiceSelect').value;
+            const extra = document.getElementById('extraPrompt').value;
+            
+            document.getElementById('statusIndicator').style.opacity = "1";
+            document.getElementById('playBtn').innerText = "🎙️";
+            document.getElementById('currentArtist').innerText = "ELIZABETH HABLANDO...";
+
+            // Diálogo directo para el modelo TTS
+            const dialogue = `Elizabeth dice con entusiasmo: ¡Hola ${user}! Qué emoción verte dándole con todo en ${game}. ¡Eres la mejor! Ahora, prepárate porque aquí llega un temazo: ${playlist[index].name}. ${extra ? extra : ''} ¡Dale!`;
+
+            log(`Generando locución con Gemini TTS (Voz: ${voice})...`);
+
             try {
-                setUI(true, "GENERANDO PRESENTACIÓN...");
-                const streamer = document.getElementById('streamerName').value || "Elizabeth";
-                const game = document.getElementById('gameName').value || "su directo";
+                // Forzamos el uso del modelo tts para asegurar salida de audio binaria
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
                 
-                // 1. Guion
-                const scriptData = await apiRequest(`https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.TEXT_MODEL}:generateContent?key=${CONFIG.API_KEY}`, {
-                    contents: [{ parts: [{ text: `Actúa como locutor de radio. Saluda a los fans de ${streamer} que ven ${game}. Presenta la canción "${song.name}". Sé breve (30 palabras).` }] }]
-                });
-                const script = scriptData.candidates[0].content.parts[0].text;
-                log(`Guion listo: "${script.substring(0, 20)}..."`);
-
-                // 2. Audio
-                const engine = document.getElementById('voiceEngine').value;
-                const voiceId = document.getElementById('voiceId').value;
-                let voiceUrl;
-
-                if (engine === 'google') {
-                    const ttsData = await apiRequest(`https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.TTS_MODEL}:generateContent?key=${CONFIG.API_KEY}`, {
-                        contents: [{ parts: [{ text: script }] }],
-                        generationConfig: { 
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: dialogue }] }],
+                        generationConfig: {
                             responseModalities: ["AUDIO"],
-                            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceId } } }
+                            speechConfig: { 
+                                voiceConfig: { 
+                                    prebuiltVoiceConfig: { voiceName: voice } 
+                                } 
+                            }
                         }
-                    });
-                    const base64 = ttsData.candidates[0].content.parts[0].inlineData.data;
-                    voiceUrl = pcmToWavUrl(base64, 24000);
-                } else {
-                    const res = await fetch('/generar-audio', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ texto: script, voiceId: voiceId })
-                    });
-                    const blob = await res.blob();
-                    voiceUrl = URL.createObjectURL(blob);
+                    })
+                });
+
+                const result = await response.json();
+                
+                // El modelo TTS responde con inlineData en la primera parte disponible
+                const audioPart = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+                
+                if (!audioPart || !audioPart.inlineData.data) {
+                    log("ERROR: No se encontró audio binario en la respuesta de Gemini TTS.");
+                    throw new Error("Respuesta sin datos de audio.");
                 }
 
-                document.getElementById('nowPlaying').innerText = "🎙️ EN EL AIRE";
-                waveContainer.style.opacity = "1";
-                audioPlayer.src = voiceUrl;
-                await audioPlayer.play();
-                toggleIcons(false);
+                log("Audio recibido con éxito. Iniciando reproducción.");
+                const blob = pcmToWavBlob(audioPart.inlineData.data, 24000);
+                const ttsAudio = new Audio(URL.createObjectURL(blob));
 
-                audioPlayer.onended = () => {
-                    setUI(false);
-                    document.getElementById('nowPlaying').innerText = song.name;
-                    audioPlayer.src = song.blobUrl;
-                    audioPlayer.play();
-                    audioPlayer.onended = () => playTrack(1);
+                ttsAudio.onended = () => {
+                    log("Elizabeth terminó su turno. Entra música.");
+                    resetUI();
+                    musicAudio.play();
                 };
+
+                await ttsAudio.play();
+
             } catch (err) {
-                log(err.message, "error");
-                setUI(false);
-                audioPlayer.src = song.blobUrl;
-                audioPlayer.play();
+                log("FALLO CRÍTICO EN IA:", err.message);
+                resetUI();
+                musicAudio.play();
             }
         }
 
-        function pcmToWavUrl(base64, rate) {
-            const bin = atob(base64);
-            const buf = new ArrayBuffer(44 + bin.length);
-            const v = new DataView(buf);
-            const s = (o, str) => { for (let i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); };
-            s(0, 'RIFF'); v.setUint32(4, 36 + bin.length, true); s(8, 'WAVE'); s(12, 'fmt ');
-            v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
-            v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true);
-            v.setUint16(34, 16, true); s(36, 'data'); v.setUint32(40, bin.length, true);
-            for (let i = 0; i < bin.length; i++) v.setUint8(44 + i, bin.charCodeAt(i));
-            return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+        function resetUI() {
+            isIAActive = false;
+            document.getElementById('statusIndicator').style.opacity = "0";
+            document.getElementById('playBtn').innerText = "⏸️";
+            document.getElementById('currentArtist').innerText = "EN EL AIRE";
         }
 
-        mainPlayBtn.addEventListener('click', () => {
-            if (currentIndex === -1) playTrack(1);
-            else if (audioPlayer.paused) { audioPlayer.play(); toggleIcons(false); waveContainer.style.opacity = "1"; }
-            else { audioPlayer.pause(); toggleIcons(true); waveContainer.style.opacity = "0"; }
-        });
+        function pcmToWavBlob(base64, rate) {
+            const bin = atob(base64);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            const header = new ArrayBuffer(44);
+            const dv = new DataView(header);
+            const s = (o, str) => { for (let i = 0; i < str.length; i++) dv.setUint8(o + i, str.charCodeAt(i)); };
+            s(0, 'RIFF'); dv.setUint32(4, 36 + bytes.length, true); s(8, 'WAVE'); s(12, 'fmt ');
+            dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+            dv.setUint32(24, rate, true); dv.setUint32(28, rate * 2, true); dv.setUint16(32, 2, true);
+            dv.setUint16(34, 16, true); s(36, 'data'); dv.setUint32(40, bytes.length, true);
+            return new Blob([header, bytes], { type: 'audio/wav' });
+        }
 
-        document.getElementById('nextBtn').addEventListener('click', () => playTrack(1));
-        document.getElementById('prevBtn').addEventListener('click', () => playTrack(-1));
-        function toggleIcons(p) { document.getElementById('playIcon').classList.toggle('hidden', !p); document.getElementById('pauseIcon').classList.toggle('hidden', p); }
-        function setUI(s, m) { document.getElementById('statusBox').classList.toggle('hidden', !s); document.getElementById('statusMessage').innerText = m; }
-        updateVoiceList();
+        document.getElementById('playBtn').onclick = () => {
+            if (isIAActive) return;
+            if (musicAudio.paused) {
+                if (currentIndex === -1 && playlist.length > 0) playWithIA(0);
+                else if (currentIndex !== -1) playWithIA(currentIndex);
+            } else {
+                musicAudio.pause();
+                document.getElementById('playBtn').innerText = "▶️";
+            }
+        };
+
+        document.getElementById('nextBtn').onclick = () => playWithIA((currentIndex + 1) % playlist.length);
+        document.getElementById('prevBtn').onclick = () => playWithIA((currentIndex - 1 + playlist.length) % playlist.length);
+        musicAudio.onended = () => { if (playlist.length > 0) document.getElementById('nextBtn').click(); };
     </script>
 </body>
 </html>
