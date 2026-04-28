@@ -18,7 +18,7 @@
     <div class="max-w-4xl mx-auto">
         <header class="mb-8 text-center">
             <h1 class="text-4xl font-extrabold text-blue-400 tracking-tighter uppercase">Elizabeth AI Station</h1>
-            <p class="text-slate-400">Locución Dinámica - Gemini 2.5 Dynamic</p>
+            <p class="text-slate-400">Locución Dinámica Multi-Modelo</p>
         </header>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -26,6 +26,10 @@
                 <section class="glass p-6 rounded-2xl border border-white/5">
                     <h2 class="font-bold mb-4 text-blue-300 text-xs tracking-widest uppercase">Ajustes de Locución</h2>
                     <div class="space-y-3 text-sm">
+                        <div>
+                            <label class="block text-[10px] text-slate-500 mb-1 font-bold">API KEY (GEMINI)</label>
+                            <input type="password" id="apiKeyInput" class="w-full bg-slate-900 p-3 rounded-xl border border-slate-700 outline-none focus:border-blue-500" placeholder="Inserta tu clave de Google AI Studio">
+                        </div>
                         <div>
                             <label class="block text-[10px] text-slate-500 mb-1 font-bold">USUARIO</label>
                             <input type="text" id="userName" class="w-full bg-slate-900 p-3 rounded-xl border border-slate-700 outline-none focus:border-blue-500" value="Ale">
@@ -45,7 +49,7 @@
                         </div>
                         <div>
                             <label class="block text-[10px] text-slate-500 mb-1 font-bold">HUMOR / CONTEXTO</label>
-                            <textarea id="extraPrompt" rows="3" class="w-full bg-slate-900 p-3 rounded-xl border border-slate-700 outline-none focus:border-blue-500" placeholder="Ej: Elizabeth hoy está muy sarcástica y bromista..."></textarea>
+                            <textarea id="extraPrompt" rows="3" class="w-full bg-slate-900 p-3 rounded-xl border border-slate-700 outline-none focus:border-blue-500" placeholder="Ej: Elizabeth hoy está sarcástica..."></textarea>
                         </div>
                     </div>
                 </section>
@@ -85,7 +89,7 @@
 
         <div class="mt-6 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl">
             <div class="bg-slate-900 px-5 py-3 text-[10px] font-black text-emerald-500 flex justify-between items-center border-b border-slate-800">
-                <span class="tracking-[0.2em]">LOG DE CABINA - ELIZABETH</span>
+                <span class="tracking-[0.2em]">LOG DE CABINA - DEPLOY READY</span>
                 <button onclick="document.getElementById('debugOutput').innerText = ''" class="hover:text-white text-[9px]">BORRAR</button>
             </div>
             <pre id="debugOutput" class="debug-panel h-48 p-5 overflow-y-auto whitespace-pre-wrap leading-relaxed"></pre>
@@ -95,7 +99,8 @@
     <audio id="musicAudio"></audio>
 
     <script>
-        const apiKey = "";
+        // Si estás en local/Canvas usa la key de entorno, si no, usa el input
+        let envApiKey = ""; 
         let playlist = [];
         let currentIndex = -1;
         let isIAActive = false;
@@ -139,6 +144,14 @@
 
         async function playWithIA(index) {
             if (isIAActive) return;
+            
+            const activeKey = document.getElementById('apiKeyInput').value || envApiKey;
+            if (!activeKey) {
+                log("ERROR: Falta API Key. Por favor, introdúcela en el panel de ajustes.");
+                musicAudio.play();
+                return;
+            }
+
             setTrack(index);
             isIAActive = true;
             
@@ -152,20 +165,19 @@
             document.getElementById('currentArtist').innerText = "ESCRIBIENDO GUION...";
 
             try {
-                // PASO 1: Generar un guion dinámico y variado
-                log("Paso 1: Generando guion creativo con Gemini 2.5 Flash...");
-                const textUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                // PASO 1: Generar guion dinámico
+                log("Paso 1: Generando guion creativo...");
+                const modelName = "gemini-2.5-flash-preview-09-2025";
+                const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${activeKey}`;
                 
-                const systemPrompt = `Eres Elizabeth, una locutora de radio humana, súper carismática, enérgica y divertida.
-                Tu trabajo es presentar canciones en vivo para tu oyente. 
-                NUNCA repitas la misma frase. Varía tus saludos, tus comentarios sobre el juego y cómo presentas la música.
-                Sé breve (máximo 20 segundos de habla).`;
+                const systemPrompt = `Eres Elizabeth, una locutora de radio humana carismática. 
+                Genera presentaciones cortas, variadas y divertidas. Nunca repitas frases. 
+                Máximo 15-20 segundos de habla. Termina con "¡Dale!".`;
 
-                const userPrompt = `Usuario: ${user}. Juego: ${game}. Canción a presentar: "${playlist[index].name}". 
-                Contexto/Humor actual: ${extra || 'Normal/Enérgico'}.
-                Escribe lo que dirías al aire. Termina siempre con "¡Dale!". Solo devuelve el texto del guion.`;
+                const userPrompt = `Usuario: ${user}. Juego: ${game}. Canción: "${playlist[index].name}". Contexto: ${extra || 'Enérgico'}. 
+                Escribe tu locución. Solo el texto.`;
 
-                const textResponse = await fetch(textUrl, {
+                const textResponse = await fetch(baseUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -174,21 +186,23 @@
                     })
                 });
 
-                const textResult = await textResponse.json();
-                const script = textResult.candidates?.[0]?.content?.parts?.[0]?.text || `¡Hola ${user}! Disfruta de ${playlist[index].name}. ¡Dale!`;
-                
-                log(`Guion generado: "${script}"`);
-                document.getElementById('currentArtist').innerText = "SINTETIZANDO VOZ...";
+                const textData = await textResponse.json();
+                if (textData.error) throw new Error(textData.error.message);
 
-                // PASO 2: Convertir ese guion a Audio HD usando el modelo TTS
-                log(`Paso 2: Convirtiendo guion a audio (Voz: ${voice})...`);
-                const ttsUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+                const script = textData.candidates?.[0]?.content?.parts?.[0]?.text || "¡Disfruta la música! ¡Dale!";
+                log(`Guion: "${script}"`);
+
+                document.getElementById('currentArtist').innerText = "GENERANDO AUDIO...";
+
+                // PASO 2: Generar Audio
+                // Usamos el mismo modelo con modalidad AUDIO para máxima compatibilidad fuera de Canvas
+                log(`Paso 2: Solicitando audio (Voz: ${voice})...`);
                 
-                const ttsResponse = await fetch(ttsUrl, {
+                const audioResponse = await fetch(baseUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: script }] }],
+                        contents: [{ parts: [{ text: `Di esto exactamente: ${script}` }] }],
                         generationConfig: {
                             responseModalities: ["AUDIO"],
                             speechConfig: { 
@@ -200,19 +214,22 @@
                     })
                 });
 
-                const ttsResult = await ttsResponse.json();
-                const audioPart = ttsResult.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+                const audioData = await audioResponse.json();
+                if (audioData.error) throw new Error(audioData.error.message);
+
+                const audioPart = audioData.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
                 
-                if (!audioPart || !audioPart.inlineData.data) {
-                    throw new Error("No se pudo obtener el audio de locución.");
+                if (!audioPart) {
+                    log("Aviso: El modelo no devolvió audio binario. Intentando con texto alternativo...");
+                    throw new Error("No audio block returned");
                 }
 
-                log("Audio HD listo. Reproduciendo Elizabeth...");
+                log("Audio recibido. Iniciando Elizabeth...");
                 const blob = pcmToWavBlob(audioPart.inlineData.data, 24000);
                 const ttsAudio = new Audio(URL.createObjectURL(blob));
 
                 ttsAudio.onended = () => {
-                    log("Elizabeth fuera del aire. Entra música.");
+                    log("Locución terminada.");
                     resetUI();
                     musicAudio.play();
                 };
@@ -220,7 +237,7 @@
                 await ttsAudio.play();
 
             } catch (err) {
-                log("FALLO EN CADENA DE IA:", err.message);
+                log(`ERROR: ${err.message}`);
                 resetUI();
                 musicAudio.play();
             }
@@ -230,7 +247,7 @@
             isIAActive = false;
             document.getElementById('statusIndicator').style.opacity = "0";
             document.getElementById('playBtn').innerText = "⏸️";
-            document.getElementById('currentArtist').innerText = "REPRODUCIENDO";
+            document.getElementById('currentArtist').innerText = "EN EL AIRE";
         }
 
         function pcmToWavBlob(base64, rate) {
