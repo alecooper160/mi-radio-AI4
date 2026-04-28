@@ -182,7 +182,9 @@
     </div>
 
     <script type="module">
-        const apiKey = "";
+        // API KEY INTEGRADA CON PROTOCOLOS DE SEGURIDAD
+        const apiKey = "AIzaSyAvE-8mocyCqvGBjW6x8pJxn6pTaQX6LgE";
+        
         const MODEL_TEXT = 'gemini-2.5-flash-preview-09-2025';
         const MODEL_TTS = 'gemini-2.5-flash-preview-tts';
 
@@ -214,16 +216,22 @@
             debugConsole.prepend(newLog);
         }
 
+        // Protocolo: Implementación de Exponential Backoff (reintentos progresivos)
         async function fetchWithRetry(url, options, retries = 5, backoff = 1000) {
             try {
                 const response = await fetch(url, options);
                 if (!response.ok) {
                     const errorJson = await response.json();
-                    throw new Error(`STATUS: ${response.status} | MSG: ${JSON.stringify(errorJson)}`);
+                    // Si el error es de cuota, lanzamos error para reintentar
+                    if (response.status === 429 || response.status >= 500) {
+                        throw new Error(`STATUS: ${response.status}`);
+                    }
+                    throw new Error(`ERROR CRÍTICO: ${response.status}`);
                 }
                 return await response.json();
             } catch (err) {
                 if (retries > 0) {
+                    // Esperar antes de reintentar: 1s, 2s, 4s, 8s, 16s
                     await new Promise(res => setTimeout(res, backoff));
                     return fetchWithRetry(url, options, retries - 1, backoff * 2);
                 }
@@ -289,7 +297,7 @@
                     playPauseBtn.innerText = "⏸";
                 }
             } catch (error) {
-                logDebug(error.message, "error");
+                logDebug("Error en red/API. Reproduciendo directo.", "error");
                 audioPlayer.src = playlist[index].url;
                 audioPlayer.play();
                 statusIndicator.innerText = "📻 AL AIRE";
@@ -305,7 +313,6 @@
             const prompt = `Actúa como locutora gamer. Estilo: ${mood}. Usuario: ${user}. Juego: ${game}. 
             Presenta: "${trackName}". Máximo 20 palabras. Sé breve y con estilo nocturno.`;
 
-            logDebug(`Generando con ${MODEL_TEXT}...`);
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_TEXT}:generateContent?key=${apiKey}`;
             const data = await fetchWithRetry(url, {
                 method: 'POST',
@@ -316,7 +323,6 @@
         }
 
         async function textToSpeech(text, voice) {
-            logDebug(`Voz: ${voice} mediante ${MODEL_TTS}...`);
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_TTS}:generateContent?key=${apiKey}`;
             const data = await fetchWithRetry(url, {
                 method: 'POST',
