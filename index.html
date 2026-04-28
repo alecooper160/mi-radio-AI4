@@ -12,7 +12,6 @@
         .audio-wave { display: flex; align-items: center; gap: 3px; height: 24px; }
         .bar { width: 4px; background: #3b82f6; animation: wave 1.2s infinite ease-in-out; border-radius: 2px; }
         @keyframes wave { 0%, 100% { height: 6px; } 50% { height: 24px; } }
-        .active-track { border-color: #3b82f6; background: rgba(59, 130, 246, 0.15); box-shadow: 0 0 15px rgba(59, 130, 246, 0.1); }
         .console-text { font-family: 'Fira Code', monospace; font-size: 0.7rem; }
         .error-msg { color: #f87171; border-left: 2px solid #ef4444; padding-left: 8px; margin-bottom: 4px; }
         .success-msg { color: #4ade80; border-left: 2px solid #22c55e; padding-left: 8px; margin-bottom: 4px; }
@@ -22,7 +21,7 @@
     <div class="max-w-5xl w-full space-y-6">
         <header class="text-center space-y-2">
             <h1 class="text-5xl font-extrabold bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-600 bg-clip-text text-transparent italic">AI RADIO HOST</h1>
-            <p class="text-slate-400 font-light tracking-widest text-xs uppercase">Security Optimized Protocol v2.6</p>
+            <p class="text-slate-400 font-light tracking-widest text-xs uppercase">Security Optimized Protocol v2.7</p>
         </header>
 
         <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -32,42 +31,30 @@
                     AJUSTES
                 </h2>
                 <div class="space-y-4">
-                    <div>
-                        <label class="block text-[10px] uppercase text-slate-500 mb-1 ml-1">Identidad</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="text" id="streamerName" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-sm focus:ring-2 ring-blue-500/20 outline-none transition-all" placeholder="Elizabeth">
-                            <input type="text" id="gameName" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-sm focus:ring-2 ring-blue-500/20 outline-none transition-all" placeholder="Minecraft">
-                        </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" id="streamerName" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-sm focus:ring-2 ring-blue-500/20 outline-none" placeholder="Elizabeth">
+                        <input type="text" id="gameName" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-sm focus:ring-2 ring-blue-500/20 outline-none" placeholder="Minecraft">
                     </div>
-                    <div>
-                        <label class="block text-[10px] uppercase text-slate-500 mb-1 ml-1">Motor de Voz</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <select id="voiceEngine" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-sm outline-none" onchange="updateVoiceList()">
-                                <option value="google">Google AI (Estable)</option>
-                                <option value="elevenlabs">ElevenLabs (Vercel API)</option>
-                            </select>
-                            <select id="voiceId" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-sm outline-none"></select>
-                        </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <select id="voiceEngine" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-sm outline-none" onchange="updateVoiceList()">
+                            <option value="google">Google AI (v2)</option>
+                            <option value="elevenlabs">ElevenLabs</option>
+                        </select>
+                        <select id="voiceId" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-sm outline-none"></select>
                     </div>
-                    <textarea id="extraInstructions" rows="3" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-sm outline-none focus:border-blue-500 transition-colors" placeholder="Ej: Estilo enérgico..."></textarea>
                 </div>
             </section>
 
             <section class="lg:col-span-2 space-y-6">
-                <div class="glass p-6 rounded-3xl flex flex-col h-[280px]">
-                    <h2 class="text-lg font-bold text-purple-400 flex items-center gap-2 mb-4">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        SISTEMA & LOGS
-                    </h2>
+                <div class="glass p-6 rounded-3xl h-[280px] flex flex-col">
                     <div id="errorDisplay" class="flex-1 bg-black/40 rounded-2xl p-4 overflow-y-auto console-text border border-white/5 space-y-1">
-                        <p class="text-slate-500 italic animate-pulse">Esperando inicialización...</p>
+                        <p class="text-slate-500 italic">Protocolo iniciado. Sistema listo.</p>
                     </div>
                 </div>
-
                 <div class="glass p-4 rounded-3xl flex items-center justify-between gap-4">
-                    <div class="flex-1 border-2 border-dashed border-slate-700 rounded-2xl p-3 text-center relative hover:bg-white/5 transition-all group">
+                    <div class="flex-1 border-2 border-dashed border-slate-700 rounded-2xl p-3 text-center relative hover:bg-white/5 transition-all">
                         <input type="file" id="musicFiles" multiple accept="audio/mpeg" class="absolute inset-0 opacity-0 cursor-pointer">
-                        <span class="text-slate-400 text-sm group-hover:text-blue-400 transition-colors">Click o Arrastra archivos MP3</span>
+                        <span class="text-slate-400 text-sm">Cargar archivos MP3</span>
                     </div>
                     <div id="fileCount" class="bg-blue-600/20 text-blue-400 px-4 py-2 rounded-xl text-xs font-bold border border-blue-500/30">0 Temas</div>
                 </div>
@@ -75,25 +62,21 @@
         </main>
 
         <footer class="glass p-8 rounded-[40px] shadow-2xl relative overflow-hidden">
-            <div id="statusBox" class="hidden absolute top-0 left-0 right-0 p-2 bg-blue-600/10 border-b border-blue-500/20 text-[10px] font-bold text-blue-400 text-center tracking-[0.3em] uppercase">
+            <div id="statusBox" class="hidden absolute top-0 left-0 right-0 p-2 bg-blue-600/10 border-b border-blue-500/20 text-[10px] font-bold text-blue-400 text-center uppercase tracking-widest">
                 <span id="statusMessage">Procesando</span>
             </div>
             <div class="flex flex-col md:flex-row items-center justify-between gap-8 mt-2">
                 <div class="text-center md:text-left flex-1 min-w-0">
-                    <h3 id="nowPlaying" class="text-2xl font-black text-white truncate drop-shadow-md">STANDBY</h3>
-                    <p id="trackDetails" class="text-sm text-slate-500 font-medium">Sube tu playlist para comenzar la radio</p>
+                    <h3 id="nowPlaying" class="text-2xl font-black text-white truncate">RADIO OFFLINE</h3>
+                    <p id="trackDetails" class="text-sm text-slate-500 font-medium">Esperando playlist...</p>
                 </div>
                 <div class="flex items-center gap-8">
-                    <button id="prevBtn" class="text-slate-400 hover:text-white transition-colors transform active:scale-90">
-                        <svg class="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"></path></svg>
-                    </button>
+                    <button id="prevBtn" class="text-slate-400 hover:text-white transition-colors transform active:scale-90"><svg class="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"></path></svg></button>
                     <button id="mainPlayBtn" disabled class="bg-blue-600 hover:bg-blue-500 w-20 h-20 rounded-full flex items-center justify-center transition-all disabled:bg-slate-800 transform active:scale-95">
                         <div id="playIcon"><svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg></div>
                         <div id="pauseIcon" class="hidden"><svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg></div>
                     </button>
-                    <button id="nextBtn" class="text-slate-400 hover:text-white transition-colors transform active:scale-90">
-                        <svg class="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"></path></svg>
-                    </button>
+                    <button id="nextBtn" class="text-slate-400 hover:text-white transition-colors transform active:scale-90"><svg class="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"></path></svg></button>
                 </div>
                 <div class="flex-1 flex justify-end">
                     <div class="audio-wave opacity-0 transition-opacity" id="waveContainer">
@@ -107,14 +90,14 @@
 
     <script>
         const CONFIG = {
-            GEMINI_KEY: "AIzaSyApkkp1hMsopejJzV5sDXzpcdY0wWHjJT0",
-            MODEL_NAME: "gemini-1.5-flash",
-            MAX_RETRIES: 3,
-            BACKOFF: 1000
+            API_KEY: "AIzaSyApkkp1hMsopejJzV5sDXzpcdY0wWHjJT0",
+            TEXT_MODEL: "gemini-1.5-flash", 
+            TTS_MODEL: "gemini-2.0-flash-exp",
+            RETRIES: 3
         };
 
         const voices = {
-            google: [{ id: "Kore", name: "Kore" }, { id: "Zephyr", name: "Zephyr" }],
+            google: [{ id: "Kore", name: "Kore (Femenina)" }, { id: "Zephyr", name: "Zephyr (Masculina)" }],
             elevenlabs: [{ id: "pNInz6obpgDQGcFmaJgB", name: "Adam" }, { id: "Xb7hH9S3oU4shU66pScB", name: "Alice" }]
         };
 
@@ -128,22 +111,25 @@
         function log(msg, type = 'info') {
             const p = document.createElement('p');
             p.className = type === 'error' ? 'error-msg' : 'success-msg';
-            p.innerHTML = `<span class="opacity-40 text-[10px] mr-2">${new Date().toLocaleTimeString()}</span> ${msg}`;
+            p.innerHTML = `<span class="opacity-30 mr-2">${new Date().toLocaleTimeString()}</span> ${msg}`;
             errorDisplay.prepend(p);
         }
 
-        async function secureFetch(url, options, attempt = 0) {
-            try {
-                const res = await fetch(url, options);
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
-                return data;
-            } catch (err) {
-                if (attempt < CONFIG.MAX_RETRIES) {
-                    await new Promise(r => setTimeout(r, CONFIG.BACKOFF * Math.pow(2, attempt)));
-                    return secureFetch(url, options, attempt + 1);
+        async function apiRequest(url, body) {
+            for(let i = 0; i < CONFIG.RETRIES; i++) {
+                try {
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error?.message || `Error ${res.status}`);
+                    return data;
+                } catch (e) {
+                    if (i === CONFIG.RETRIES - 1) throw e;
+                    await new Promise(r => setTimeout(r, 1000 * (i + 1)));
                 }
-                throw err;
             }
         }
 
@@ -158,7 +144,7 @@
             files.forEach(file => playlist.push({ name: file.name.replace(/\.[^/.]+$/, ""), blobUrl: URL.createObjectURL(file) }));
             document.getElementById('fileCount').innerText = `${playlist.length} Temas`;
             mainPlayBtn.disabled = playlist.length === 0;
-            log(`Archivos cargados correctamente.`);
+            log(`Playlist actualizada con ${files.length} pistas.`);
         });
 
         async function playTrack(direction = 1) {
@@ -167,33 +153,29 @@
             const song = playlist[currentIndex];
             
             try {
-                setUI(true, "GENERANDO PRESENTACIÓN");
+                setUI(true, "GENERANDO PRESENTACIÓN...");
                 const streamer = document.getElementById('streamerName').value || "Elizabeth";
                 const game = document.getElementById('gameName').value || "su directo";
-                const prompt = `Actúa como un locutor de radio. Saluda a la audiencia de ${streamer} que ve ${game}. Presenta la canción "${song.name}". Sé breve (30 palabras).`;
-
-                const data = await secureFetch(`https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.MODEL_NAME}:generateContent?key=${CONFIG.GEMINI_KEY}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                
+                // 1. Guion
+                const scriptData = await apiRequest(`https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.TEXT_MODEL}:generateContent?key=${CONFIG.API_KEY}`, {
+                    contents: [{ parts: [{ text: `Actúa como locutor de radio. Saluda a los fans de ${streamer} que ven ${game}. Presenta la canción "${song.name}". Sé breve (30 palabras).` }] }]
                 });
+                const script = scriptData.candidates[0].content.parts[0].text;
+                log(`Guion listo: "${script.substring(0, 20)}..."`);
 
-                const script = data.candidates[0].content.parts[0].text;
+                // 2. Audio
                 const engine = document.getElementById('voiceEngine').value;
                 const voiceId = document.getElementById('voiceId').value;
                 let voiceUrl;
 
                 if (engine === 'google') {
-                    const ttsData = await secureFetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${CONFIG.GEMINI_KEY}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{ parts: [{ text: script }] }],
-                            generationConfig: { 
-                                responseModalities: ["AUDIO"],
-                                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceId } } }
-                            }
-                        })
+                    const ttsData = await apiRequest(`https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.TTS_MODEL}:generateContent?key=${CONFIG.API_KEY}`, {
+                        contents: [{ parts: [{ text: script }] }],
+                        generationConfig: { 
+                            responseModalities: ["AUDIO"],
+                            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceId } } }
+                        }
                     });
                     const base64 = ttsData.candidates[0].content.parts[0].inlineData.data;
                     voiceUrl = pcmToWavUrl(base64, 24000);
@@ -207,7 +189,7 @@
                     voiceUrl = URL.createObjectURL(blob);
                 }
 
-                document.getElementById('nowPlaying').innerText = "🎙️ PRESENTANDO...";
+                document.getElementById('nowPlaying').innerText = "🎙️ EN EL AIRE";
                 waveContainer.style.opacity = "1";
                 audioPlayer.src = voiceUrl;
                 await audioPlayer.play();
