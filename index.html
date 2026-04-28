@@ -12,51 +12,55 @@
         .on-air-pulse { animation: pulse 2s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
         .debug-panel { background: #000; font-family: 'Courier New', monospace; font-size: 11px; color: #10b981; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-8">
     <div class="max-w-4xl mx-auto">
         <header class="mb-8 text-center">
             <h1 class="text-4xl font-extrabold text-blue-400 tracking-tighter uppercase">Elizabeth AI Station</h1>
-            <p class="text-slate-400">Locución Dinámica (Gemini 2.5 Flash Engine)</p>
+            <p class="text-slate-400">Locución Dinámica Segura (Gemini 2.5 Flash)</p>
         </header>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="md:col-span-1 space-y-4">
+                <!-- Panel de Control -->
                 <section class="glass p-6 rounded-2xl border border-white/5">
-                    <h2 class="font-bold mb-4 text-blue-300 text-xs tracking-widest uppercase">Ajustes de Locución</h2>
-                    <div class="space-y-3 text-sm">
+                    <h2 class="font-bold mb-4 text-blue-300 text-xs tracking-widest uppercase">Ajustes de Emisión</h2>
+                    <div class="space-y-4 text-sm">
                         <div>
-                            <label class="block text-[10px] text-slate-500 mb-1 font-bold">USUARIO</label>
-                            <input type="text" id="userName" class="w-full bg-slate-900 p-3 rounded-xl border border-slate-700 outline-none focus:border-blue-500" value="Ale">
+                            <label class="block text-[10px] text-slate-500 mb-1 font-bold uppercase tracking-widest">Usuario</label>
+                            <input type="text" id="userName" class="w-full bg-slate-900 p-3 rounded-xl border border-slate-700 outline-none focus:border-blue-500 transition-colors" value="Elizabeth">
                         </div>
                         <div>
-                            <label class="block text-[10px] text-slate-500 mb-1 font-bold">JUEGO</label>
-                            <input type="text" id="gameName" class="w-full bg-slate-900 p-3 rounded-xl border border-slate-700 outline-none focus:border-blue-500" value="Forza 5">
+                            <label class="block text-[10px] text-slate-500 mb-1 font-bold uppercase tracking-widest">Videojuego</label>
+                            <input type="text" id="gameName" class="w-full bg-slate-900 p-3 rounded-xl border border-slate-700 outline-none focus:border-blue-500 transition-colors" value="Forza 5">
                         </div>
                         <div>
-                            <label class="block text-[10px] text-slate-500 mb-1 font-bold">VOZ NATIVA</label>
-                            <select id="voiceSelect" class="w-full bg-slate-900 p-3 rounded-xl border border-slate-700 outline-none">
-                                <option value="Kore">Kore (Principal)</option>
+                            <label class="block text-[10px] text-slate-500 mb-1 font-bold uppercase tracking-widest">Personalidad de Voz</label>
+                            <select id="voiceSelect" class="w-full bg-slate-900 p-3 rounded-xl border border-slate-700 outline-none focus:border-blue-500 transition-colors">
+                                <option value="Kore">Kore (Neutral)</option>
                                 <option value="Zephyr">Zephyr (Enérgico)</option>
                                 <option value="Callirrhoe">Callirrhoe (Elegante)</option>
-                                <option value="Puck">Puck (Divertido)</option>
-                                <option value="Charon">Charon (Profundo)</option>
+                                <option value="Puck">Puck (Juvenil)</option>
+                                <option value="Charon">Charon (Deep)</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[10px] text-slate-500 mb-1 font-bold">HUMOR / CONTEXTO</label>
-                            <textarea id="extraPrompt" rows="3" class="w-full bg-slate-900 p-3 rounded-xl border border-slate-700 outline-none focus:border-blue-500" placeholder="Ej: Elizabeth hoy está sarcástica..."></textarea>
+                            <label class="block text-[10px] text-slate-500 mb-1 font-bold uppercase tracking-widest">Contexto Extra</label>
+                            <textarea id="extraPrompt" rows="3" class="w-full bg-slate-900 p-3 rounded-xl border border-slate-700 outline-none focus:border-blue-500 transition-colors" placeholder="Ej: Es viernes por la noche..."></textarea>
                         </div>
                     </div>
                 </section>
 
                 <section class="glass p-6 rounded-2xl border border-white/5">
-                    <h2 class="font-bold mb-4 text-blue-300 text-xs tracking-widest uppercase">Cargar Música</h2>
+                    <h2 class="font-bold mb-4 text-blue-300 text-xs tracking-widest uppercase">Biblioteca Musical</h2>
                     <input type="file" id="fileInput" class="text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer" accept="audio/mp3" multiple>
                 </section>
             </div>
 
+            <!-- Reproductor Principal -->
             <div class="md:col-span-2 space-y-4">
                 <div class="glass p-10 rounded-[2.5rem] text-center relative border border-blue-500/30 overflow-hidden">
                     <div id="statusIndicator" class="absolute top-6 right-6 flex items-center gap-2 opacity-0 transition-opacity duration-500">
@@ -64,22 +68,22 @@
                         <span class="text-[10px] font-black text-red-500 uppercase tracking-widest">Al Aire</span>
                     </div>
 
-                    <div class="w-44 h-44 bg-slate-800 rounded-3xl mx-auto mb-8 flex items-center justify-center border border-slate-700 shadow-inner group transition-all">
-                        <span class="text-6xl group-hover:scale-110 transition-transform" id="artIcon">🎙️</span>
+                    <div class="w-44 h-44 bg-slate-800 rounded-3xl mx-auto mb-8 flex items-center justify-center border border-slate-700 shadow-inner">
+                        <span class="text-6xl" id="artIcon">🎙️</span>
                     </div>
 
-                    <h3 id="currentTitle" class="text-2xl font-black mb-2 uppercase tracking-tight truncate px-6">Sin música</h3>
-                    <p id="currentArtist" class="text-slate-500 text-sm mb-10 tracking-widest font-bold uppercase">LISTA VACÍA</p>
+                    <h3 id="currentTitle" class="text-2xl font-black mb-2 uppercase tracking-tight truncate px-6">Sin pistas cargadas</h3>
+                    <p id="currentArtist" class="text-slate-500 text-sm mb-10 tracking-widest font-bold uppercase">Elizabeth Radio Station</p>
 
                     <div class="flex items-center justify-center gap-12">
-                        <button id="prevBtn" class="text-2xl opacity-40 hover:opacity-100 transition-opacity">⏮️</button>
-                        <button id="playBtn" class="w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center text-4xl shadow-[0_0_30px_rgba(37,99,235,0.5)] hover:bg-blue-500 hover:scale-110 active:scale-90 transition-all">▶️</button>
-                        <button id="nextBtn" class="text-2xl opacity-40 hover:opacity-100 transition-opacity">⏭️</button>
+                        <button id="prevBtn" class="text-2xl opacity-40 hover:opacity-100 transition-all">⏮️</button>
+                        <button id="playBtn" class="w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center text-4xl shadow-[0_0_30px_rgba(37,99,235,0.5)] hover:bg-blue-500 hover:scale-110 active:scale-95 transition-all">▶️</button>
+                        <button id="nextBtn" class="text-2xl opacity-40 hover:opacity-100 transition-all">⏭️</button>
                     </div>
                 </div>
 
                 <div class="glass p-6 rounded-3xl max-h-48 overflow-y-auto space-y-2" id="playlist">
-                    <p class="text-center text-slate-600 text-xs italic py-4 font-medium">No hay canciones</p>
+                    <p class="text-center text-slate-600 text-xs italic py-4">Sube música para comenzar la emisión</p>
                 </div>
             </div>
         </div>
@@ -96,7 +100,9 @@
     <audio id="musicAudio"></audio>
 
     <script>
-        const apiKey = ""; // La API Key se inyecta en el entorno
+        // La API Key se proporciona automáticamente por el entorno seguro.
+        const apiKey = ""; 
+        
         let playlist = [];
         let currentIndex = -1;
         let isIAActive = false;
@@ -112,14 +118,17 @@
 
         document.getElementById('fileInput').addEventListener('change', (e) => {
             const files = Array.from(e.target.files);
-            files.forEach(f => playlist.push({ name: f.name.replace('.mp3', ''), url: URL.createObjectURL(f) }));
+            files.forEach(f => playlist.push({ 
+                name: f.name.replace('.mp3', ''), 
+                url: URL.createObjectURL(f) 
+            }));
             renderPlaylist();
             if (currentIndex === -1) setTrack(0);
         });
 
         function renderPlaylist() {
             const container = document.getElementById('playlist');
-            container.innerHTML = playlist.length ? '' : '<p class="text-center text-slate-600 text-xs italic py-4">No hay canciones</p>';
+            container.innerHTML = playlist.length ? '' : '<p class="text-center text-slate-600 text-xs italic py-4">No hay pistas</p>';
             playlist.forEach((t, i) => {
                 const div = document.createElement('div');
                 div.className = `p-3 text-xs font-bold cursor-pointer rounded-xl transition-all ${i === currentIndex ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'hover:bg-slate-800 text-slate-400'}`;
@@ -133,25 +142,32 @@
             currentIndex = i;
             musicAudio.src = playlist[i].url;
             document.getElementById('currentTitle').innerText = playlist[i].name;
-            document.getElementById('currentArtist').innerText = "ESPERANDO";
+            document.getElementById('currentArtist').innerText = "EN PAUSA";
         }
 
-        async function fetchWithRetry(url, options, retries = 5, backoff = 1000) {
+        // Función con Exponential Backoff para robustez total
+        async function robustFetch(url, payload, retries = 5, delay = 1000) {
             for (let i = 0; i < retries; i++) {
                 try {
-                    const response = await fetch(url, options);
-                    if (response.ok) return await response.json();
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await response.json();
+                    if (response.ok) return data;
+                    
+                    // Si hay error de cuota o servidor, reintentamos
                     if (response.status === 429 || response.status >= 500) {
-                        await new Promise(r => setTimeout(r, backoff));
-                        backoff *= 2;
+                        await new Promise(r => setTimeout(r, delay));
+                        delay *= 2;
                         continue;
                     }
-                    const error = await response.json();
-                    throw new Error(error.error?.message || `HTTP ${response.status}`);
+                    throw new Error(data.error?.message || "Error desconocido de API");
                 } catch (err) {
                     if (i === retries - 1) throw err;
-                    await new Promise(r => setTimeout(r, backoff));
-                    backoff *= 2;
+                    await new Promise(r => setTimeout(r, delay));
+                    delay *= 2;
                 }
             }
         }
@@ -162,23 +178,24 @@
             isIAActive = true;
             
             document.getElementById('statusIndicator').style.opacity = "1";
-            document.getElementById('currentArtist').innerText = "CONECTANDO CON ELIZABETH...";
+            document.getElementById('currentArtist').innerText = "CONECTANDO CON LA CABINA...";
 
             try {
+                // USAMOS EL MODELO GEMINI 2.5 FLASH PREVIEW (SOPORTE AUDIO INTEGRADO)
                 const modelId = "gemini-2.5-flash-preview-09-2025";
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
                 
-                log(`Solicitando locución...`);
+                log(`Iniciando sesión segura con ${modelId}...`);
 
-                const user = document.getElementById('userName').value || "Ale";
-                const game = document.getElementById('gameName').value || "Forza";
+                const user = document.getElementById('userName').value || "Locutor";
+                const game = document.getElementById('gameName').value || "Juego";
                 const voice = document.getElementById('voiceSelect').value;
                 const extra = document.getElementById('extraPrompt').value;
 
                 const payload = {
                     contents: [{ 
                         parts: [{ 
-                            text: `Eres Elizabeth, una locutora de radio carismática y emocionante. Contexto: El usuario ${user} está jugando a ${game}. Presenta la canción "${playlist[index].name}" en un estilo de radio FM. Humor: ${extra}. Sé breve (máximo 12 segundos). Termina siempre con "¡Dale!".` 
+                            text: `Actúa como Elizabeth, una locutora de radio FM muy profesional y carismática. Estás en vivo para ${user} que juega a ${game}. Presenta la canción "${playlist[index].name}". Contexto adicional: ${extra}. Tu mensaje debe durar menos de 10 segundos. Termina con la frase "¡Dale!". No uses asteriscos ni formato de texto.` 
                         }] 
                     }],
                     generationConfig: {
@@ -191,21 +208,20 @@
                     }
                 };
 
-                const data = await fetchWithRetry(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+                const data = await robustFetch(url, payload);
 
                 const audioPart = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-                if (!audioPart) throw new Error("Respuesta sin contenido de audio.");
+                if (!audioPart) throw new Error("No se pudo obtener el audio de la locución.");
 
-                log(`Audio listo. Reproduciendo...`);
+                log(`Recibida locución de Elizabeth. Iniciando transmisión.`);
                 const blob = pcmToWavBlob(audioPart.inlineData.data, 24000);
                 const ttsAudio = new Audio(URL.createObjectURL(blob));
 
                 ttsAudio.onended = () => {
-                    resetUI();
+                    isIAActive = false;
+                    document.getElementById('statusIndicator').style.opacity = "0";
+                    document.getElementById('currentArtist').innerText = "EN VIVO - MÚSICA";
+                    document.getElementById('playBtn').innerText = "⏸️";
                     musicAudio.play();
                 };
 
@@ -213,18 +229,13 @@
 
             } catch (err) {
                 log(`FALLO: ${err.message}`);
-                resetUI();
+                isIAActive = false;
+                document.getElementById('statusIndicator').style.opacity = "0";
                 musicAudio.play();
             }
         }
 
-        function resetUI() {
-            isIAActive = false;
-            document.getElementById('statusIndicator').style.opacity = "0";
-            document.getElementById('playBtn').innerText = "⏸️";
-            document.getElementById('currentArtist').innerText = "REPRODUCIENDO";
-        }
-
+        // Conversor PCM a WAV necesario para la reproducción de audio de Gemini
         function pcmToWavBlob(base64, rate) {
             const bin = atob(base64);
             const bytes = new Uint8Array(bin.length);
@@ -250,9 +261,17 @@
             }
         };
 
-        document.getElementById('nextBtn').onclick = () => playWithIA((currentIndex + 1) % playlist.length);
-        document.getElementById('prevBtn').onclick = () => playWithIA((currentIndex - 1 + playlist.length) % playlist.length);
-        musicAudio.onended = () => { if (playlist.length > 0) document.getElementById('nextBtn').click(); };
+        document.getElementById('nextBtn').onclick = () => {
+            if (playlist.length > 0) playWithIA((currentIndex + 1) % playlist.length);
+        };
+
+        document.getElementById('prevBtn').onclick = () => {
+            if (playlist.length > 0) playWithIA((currentIndex - 1 + playlist.length) % playlist.length);
+        };
+
+        musicAudio.onended = () => {
+            if (playlist.length > 0) document.getElementById('nextBtn').click();
+        };
     </script>
 </body>
 </html>
