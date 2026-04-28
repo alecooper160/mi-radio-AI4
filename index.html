@@ -48,10 +48,10 @@
             <section class="glass p-6 rounded-2xl space-y-4">
                 <h2 class="text-xl font-semibold flex items-center gap-2 text-purple-400">Música</h2>
                 <div class="border-2 border-dashed border-slate-700 rounded-xl p-8 text-center relative cursor-pointer hover:border-purple-500">
-                    <input type="file" id="musicFiles" multiple accept="audio/mp3" class="absolute inset-0 opacity-0 cursor-pointer">
-                    <p class="text-slate-400">Cargar MP3s</p>
+                    <input type="file" id="musicFiles" multiple accept="audio/mpeg, audio/mp3" class="absolute inset-0 opacity-0 cursor-pointer">
+                    <p class="text-slate-400">Haz clic para cargar archivos MP3</p>
                 </div>
-                <div id="playlist" class="max-h-48 overflow-y-auto space-y-2"></div>
+                <div id="playlist" class="max-h-48 overflow-y-auto space-y-2 pr-2"></div>
             </section>
         </main>
 
@@ -62,10 +62,10 @@
             </div>
             <div class="flex flex-col md:flex-row items-center gap-4">
                 <div class="flex-1">
-                    <p id="nowPlaying" class="font-bold text-lg text-slate-100">Esperando...</p>
+                    <p id="nowPlaying" class="font-bold text-lg text-slate-100 text-center md:text-left">Esperando selección...</p>
                     <p id="trackDetails" class="text-sm text-slate-400 text-center md:text-left">Carga música para empezar.</p>
                 </div>
-                <button id="playBtn" disabled class="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white px-8 py-3 rounded-full font-bold shadow-lg transform active:scale-95">REPRODUCIR SIGUIENTE</button>
+                <button id="playBtn" disabled class="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white px-8 py-3 rounded-full font-bold shadow-lg transform active:scale-95 transition-all">REPRODUCIR SIGUIENTE</button>
             </div>
             <audio id="audioPlayer" class="hidden"></audio>
         </footer>
@@ -75,20 +75,35 @@
         const apiKey = "AIzaSyApkkp1hMsopejJzV5sDXzpcdY0wWHjJT0"; 
         const audioPlayer = document.getElementById('audioPlayer');
         const playBtn = document.getElementById('playBtn');
+        const playlistContainer = document.getElementById('playlist');
         let playlist = [];
         let currentIndex = -1;
 
+        // Corregida la carga de archivos
         document.getElementById('musicFiles').addEventListener('change', (e) => {
-            Array.from(e.target.files).forEach(file => {
-                playlist.push({ name: file.name.replace('.mp3', ''), url: URL.createObjectURL(file) });
+            const files = Array.from(e.target.files);
+            if (files.length === 0) return;
+
+            files.forEach(file => {
+                // Crear objeto de canción con URL local
+                const song = {
+                    name: file.name.replace(/\.[^/.]+$/, ""), // Quitar extensión
+                    url: URL.createObjectURL(file)
+                };
+                playlist.push(song);
             });
+
             renderPlaylist();
-            if (playlist.length > 0) playBtn.disabled = false;
+            playBtn.disabled = playlist.length === 0;
+            document.getElementById('trackDetails').innerText = `${playlist.length} canción(es) cargada(s).`;
         });
 
         function renderPlaylist() {
-            document.getElementById('playlist').innerHTML = playlist.map((s, i) => `
-                <div class="p-2 bg-slate-800/50 rounded-lg text-sm truncate border border-transparent hover:border-blue-500/50">${s.name}</div>
+            playlistContainer.innerHTML = playlist.map((s, i) => `
+                <div class="p-2 bg-slate-800/50 rounded-lg text-sm truncate border border-slate-700 flex justify-between items-center">
+                    <span class="truncate">${s.name}</span>
+                    <span class="text-xs text-blue-400 font-mono">#${i + 1}</span>
+                </div>
             `).join('');
         }
 
@@ -111,8 +126,8 @@
                 await obtenerVozYReproducir(text, song);
 
             } catch (e) {
-                console.error("Error en el proceso:", e);
-                setUI(false, "Error: Revisa la conexión o las claves de API.");
+                console.error("Error:", e);
+                setUI(false, "Error en la generación. Revisa las APIs.");
                 playBtn.disabled = false;
             }
         });
@@ -120,33 +135,43 @@
         async function obtenerVozYReproducir(textoParaConvertir, song) {
             const voiceId = document.getElementById('voiceId').value;
             
-            const respuesta = await fetch('/generar-audio', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    texto: textoParaConvertir,
-                    voiceId: voiceId 
-                })
-            });
+            try {
+                const respuesta = await fetch('/generar-audio', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        texto: textoParaConvertir,
+                        voiceId: voiceId 
+                    })
+                });
 
-            if (!respuesta.ok) throw new Error("Error en el servidor de audio.");
+                if (!respuesta.ok) throw new Error("Error en el servidor de audio.");
 
-            const blob = await respuesta.blob();
-            const urlAudioLocutor = URL.createObjectURL(blob);
-            
-            playBtn.disabled = true;
-            document.getElementById('nowPlaying').innerText = `🎙️ Locutor: Presentando...`;
+                const blob = await respuesta.blob();
+                const urlAudioLocutor = URL.createObjectURL(blob);
+                
+                playBtn.disabled = true;
+                document.getElementById('nowPlaying').innerText = `🎙️ Presentando: ${song.name}`;
 
-            audioPlayer.src = urlAudioLocutor;
-            audioPlayer.play().catch(err => {
-                console.error("Error al reproducir audio:", err);
-                playSong(song);
-            });
+                audioPlayer.src = urlAudioLocutor;
+                audioPlayer.play();
 
-            audioPlayer.onended = () => playSong(song);
+                audioPlayer.onended = () => {
+                    document.getElementById('nowPlaying').innerText = `🎵 Sonando: ${song.name}`;
+                    audioPlayer.src = song.url;
+                    audioPlayer.play();
+                    audioPlayer.onended = () => {
+                        setUI(false);
+                        playBtn.disabled = false;
+                    };
+                };
+            } catch (error) {
+                console.warn("Fallo servidor de voz, reproduciendo solo música:", error);
+                playSongDirect(song);
+            }
         }
 
-        function playSong(song) {
+        function playSongDirect(song) {
             document.getElementById('nowPlaying').innerText = `🎵 Sonando: ${song.name}`;
             audioPlayer.src = song.url;
             audioPlayer.play();
@@ -157,24 +182,19 @@
         }
 
         async function generateText(userQuery) {
-            const systemPrompt = "Eres un locutor de radio profesional, carismático y breve.";
-            
             const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     contents: [{ parts: [{ text: userQuery }] }],
-                    systemInstruction: { parts: [{ text: systemPrompt }] }
+                    systemInstruction: { parts: [{ text: "Eres un locutor de radio profesional y breve." }] }
                 })
             });
             
-            if (!res.ok) {
-                const errData = await res.json();
-                throw new Error(errData.error?.message || "Fallo en Gemini API");
-            }
+            if (!res.ok) throw new Error("Fallo en Gemini API");
             
             const data = await res.json();
-            return data.candidates?.[0]?.content?.parts?.[0]?.text || "¡Música en el aire!";
+            return data.candidates?.[0]?.content?.parts?.[0]?.text || "¡Aquí llega la música!";
         }
 
         function setUI(show, msg) {
