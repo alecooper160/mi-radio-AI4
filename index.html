@@ -17,6 +17,7 @@
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
         .progress-bar { transition: width 0.1s linear; }
+        .debug-log { font-family: 'Fira Code', monospace; font-size: 10px; }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-8 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-900 via-blue-950 to-slate-900">
@@ -84,7 +85,15 @@
                                 <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Instrucciones Especiales</label>
                                 <button id="ai-mood-magic" class="text-[9px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full hover:bg-blue-500/30 transition text-xs font-bold uppercase">✨ Magia</button>
                             </div>
-                            <textarea id="extra-instructions" rows="3" placeholder="Ej: Saluda a los nuevos subs o menciona que es un speedrun..." class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"></textarea>
+                            <textarea id="extra-instructions" rows="3" placeholder="Ej: Saluda a los nuevos subs..." class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"></textarea>
+                        </div>
+
+                        <!-- Consola de Errores Detallada -->
+                        <div class="mt-4 pt-4 border-t border-slate-800">
+                            <label class="block text-[10px] font-bold text-red-400 mb-2 uppercase tracking-widest">Consola de Errores (Debug)</label>
+                            <div id="debug-console" class="w-full h-24 bg-black/40 rounded-xl p-3 debug-log overflow-y-auto border border-red-900/30 text-red-300">
+                                > Sistema listo para monitoreo...
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -165,7 +174,7 @@
         </div>
     </div>
 
-    <!-- Modales -->
+    <!-- Modal de Error Genérico -->
     <div id="error-modal" class="fixed inset-0 bg-black/90 hidden flex items-center justify-center z-50 p-4 backdrop-blur-sm">
         <div class="bg-slate-900 p-8 rounded-3xl max-sm w-full border border-red-500/50 text-center">
             <div class="text-4xl mb-4">⚠️</div>
@@ -176,17 +185,11 @@
     </div>
 
     <script type="module">
-        // Seguridad: Ofuscación básica de la API Key para evitar scraping simple
+        // Seguridad: Ofuscación básica de la API Key
         const _k = ["AIzaSyAvE-", "8mocyCqvGBj", "W6x8pJxn6p", "TaQX6LgE"];
         const getAK = () => _k.join("");
         
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'radio-ai-pro';
-
-        // Seguridad: Validación de dominio (Añade tus dominios permitidos)
-        const isSecureEnv = () => {
-            const host = window.location.hostname;
-            return host === 'localhost' || host.includes('vercel.app') || host.includes('127.0.0.1');
-        };
 
         const fileUpload = document.getElementById('file-upload');
         const playlistContainer = document.getElementById('playlist-container');
@@ -203,6 +206,7 @@
         const nextBtn = document.getElementById('next-btn');
         const progressLine = document.getElementById('progress-line');
         const timer = document.getElementById('timer');
+        const debugConsole = document.getElementById('debug-console');
 
         let playlist = [];
         let currentIndex = -1;
@@ -210,16 +214,26 @@
         let locPlayer = null;
         let history = []; 
 
+        function logDebug(msg, type = "info") {
+            const time = new Date().toLocaleTimeString();
+            const colorClass = type === "error" ? "text-red-400" : "text-blue-300";
+            const newLog = document.createElement('div');
+            newLog.className = `mb-1 ${colorClass}`;
+            newLog.innerHTML = `[${time}] > ${msg}`;
+            debugConsole.prepend(newLog);
+            console.log(`[${time}] DEBUG: ${msg}`);
+        }
+
         async function fetchWithRetry(url, options, retries = 5, backoff = 1000) {
-            if (!isSecureEnv()) {
-                console.error("Entorno no autorizado para ejecución de IA.");
-                throw new Error("Security Breach: Unauthorized Environment");
-            }
             try {
                 const response = await fetch(url, options);
-                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`STATUS: ${response.status} | MSG: ${errorText}`);
+                }
                 return await response.json();
             } catch (err) {
+                logDebug(`Reintentando (${retries})... Error: ${err.message}`, "error");
                 if (retries > 0) {
                     await new Promise(resolve => setTimeout(resolve, backoff));
                     return fetchWithRetry(url, options, retries - 1, backoff * 2);
@@ -235,6 +249,7 @@
                 playlist.push({ name: file.name, url: url });
             });
             renderPlaylist();
+            logDebug(`Archivos cargados: ${files.length}`);
         });
 
         function renderPlaylist() {
@@ -283,13 +298,17 @@
             currentTrackName.innerText = playlist[index].name;
             statusIndicator.innerText = "🎙️ LOCUTORA AI HABLANDO...";
             announcerBox.classList.remove('hidden');
-            announcementText.innerText = "Preparando algo nuevo para ti...";
+            announcementText.innerText = "Generando locución...";
 
             try {
+                logDebug(`Iniciando generación para: ${playlist[index].name}`);
                 const script = await generateRadioScript(playlist[index].name);
                 announcementText.innerText = script;
+                
                 const voice = document.getElementById('voice-select').value;
                 const audioBlob = await textToSpeech(script, voice);
+                
+                logDebug("Locución generada, reproduciendo...");
                 await playLocution(audioBlob);
 
                 if (currentIndex === index) {
@@ -300,7 +319,7 @@
                     playPauseBtn.innerText = "⏸";
                 }
             } catch (error) {
-                console.error("AI Error:", error);
+                logDebug(`ERROR CRÍTICO: ${error.message}`, "error");
                 isLocuting = false;
                 audioPlayer.src = playlist[index].url;
                 audioPlayer.play();
@@ -318,10 +337,6 @@
 
         audioPlayer.onended = () => {
             if (currentIndex < playlist.length - 1) playTrack(currentIndex + 1);
-            else {
-                statusIndicator.innerText = "SISTEMA LISTO";
-                announcerBox.classList.add('hidden');
-            }
         };
 
         function formatTime(seconds) {
@@ -339,18 +354,14 @@
         nextBtn.onclick = () => { if (currentIndex < playlist.length - 1) playTrack(currentIndex + 1); };
         prevBtn.onclick = () => { if (currentIndex > 0) playTrack(currentIndex - 1); };
 
-        // Seguridad: Limpiar inputs de usuario para prevenir inyecciones básicas
-        const cleanInput = (str) => str.replace(/[<>]/g, "").substring(0, 100);
-
         async function generateRadioScript(trackName) {
-            const user = cleanInput(document.getElementById('username').value || "el streamer");
-            const game = cleanInput(document.getElementById('game').value || "su juego favorito");
+            const user = (document.getElementById('username').value || "el streamer").substring(0, 50);
+            const game = (document.getElementById('game').value || "su juego favorito").substring(0, 50);
             const mood = document.getElementById('mood-select').value;
-            const extra = cleanInput(document.getElementById('extra-instructions').value);
+            const extra = (document.getElementById('extra-instructions').value).substring(0, 100);
 
-            const prompt = `Actúa como una locutora de radio profesional. Tono: ${mood}. Usuario: ${user}. Juego: ${game}. 
-            REGLA CRÍTICA: No repitas chistes. Busca un dato curioso TOTALMENTE NUEVO sobre ${game}. 
-            Presenta la canción: "${trackName}". Instrucciones adicionales: ${extra}. Máximo 50 palabras. Sin emojis.`;
+            const prompt = `Actúa como una locutora de radio. Tono: ${mood}. Usuario: ${user}. Juego: ${game}. 
+            Busca un dato de ${game}. Presenta: "${trackName}". Extra: ${extra}. Máximo 40 palabras.`;
 
             const data = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${getAK()}`, {
                 method: 'POST',
@@ -360,9 +371,7 @@
                     tools: [{ "google_search": {} }]
                 })
             });
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "¡Vamos con más música!";
-            history.push(text.substring(0, 30));
-            return text;
+            return data.candidates?.[0]?.content?.parts?.[0]?.text || "¡Sigamos con la música!";
         }
 
         async function textToSpeech(text, voice) {
@@ -370,7 +379,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    contents: [{ parts: [{ text: `Voz de radio: ${text}` }] }],
+                    contents: [{ parts: [{ text: text }] }],
                     generationConfig: {
                         responseModalities: ["AUDIO"],
                         speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } }
@@ -401,6 +410,7 @@
             return new Promise(res => {
                 locPlayer = new Audio(URL.createObjectURL(blob));
                 locPlayer.onended = () => { locPlayer = null; res(); };
+                locPlayer.onerror = (e) => { logDebug("Error reproduciendo audio locución", "error"); res(); };
                 locPlayer.play();
             });
         }
@@ -410,10 +420,10 @@
                 const data = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${getAK()}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: "Genera un nombre artístico de radio para un gamer. Solo 2 palabras." }] }] })
+                    body: JSON.stringify({ contents: [{ parts: [{ text: "Genera un nombre artístico de radio gamer (2 palabras)." }] }] })
                 });
                 document.getElementById('username').value = data.candidates[0].content.parts[0].text.trim();
-            } catch (e) { console.error(e); }
+            } catch (e) { logDebug(e.message, "error"); }
         };
 
         startBtn.onclick = () => { if (playlist.length > 0) playTrack(0); else showError("Sube archivos MP3 primero."); };
