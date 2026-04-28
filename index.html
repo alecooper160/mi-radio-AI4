@@ -22,7 +22,6 @@
         </header>
 
         <main class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Panel de Configuración -->
             <section class="glass p-6 rounded-2xl space-y-4">
                 <h2 class="text-xl font-semibold flex items-center gap-2 text-blue-400">Perfil de Transmisión</h2>
                 <div>
@@ -47,7 +46,6 @@
                 </div>
             </section>
 
-            <!-- Panel de Música -->
             <section class="glass p-6 rounded-2xl space-y-4">
                 <h2 class="text-xl font-semibold flex items-center gap-2 text-purple-400">Música Local</h2>
                 <div class="border-2 border-dashed border-slate-700 rounded-xl p-8 text-center relative cursor-pointer hover:border-purple-500 transition-colors">
@@ -58,7 +56,6 @@
             </section>
         </main>
 
-        <!-- Reproductor -->
         <footer class="glass p-6 rounded-2xl">
             <div id="statusBox" class="hidden mb-4 p-3 bg-blue-900/30 border border-blue-500/50 rounded-lg text-sm flex items-center justify-between">
                 <span id="statusMessage">Iniciando...</span>
@@ -70,9 +67,9 @@
             </div>
 
             <div class="flex flex-col md:flex-row items-center gap-4">
-                <div class="flex-1 w-full">
-                    <p id="nowPlaying" class="font-bold text-lg text-slate-100 text-center md:text-left truncate">Sin música cargada</p>
-                    <p id="trackDetails" class="text-sm text-slate-400 text-center md:text-left">Carga tus temas para empezar la magia.</p>
+                <div class="flex-1 w-full text-center md:text-left">
+                    <p id="nowPlaying" class="font-bold text-lg text-slate-100 truncate">Sin música cargada</p>
+                    <p id="trackDetails" class="text-sm text-slate-400">Carga tus temas para empezar.</p>
                 </div>
                 <button id="playBtn" disabled class="w-full md:w-auto bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white px-8 py-4 rounded-full font-bold shadow-lg transform active:scale-95 transition-all">
                     REPRODUCIR SIGUIENTE
@@ -83,7 +80,6 @@
     </div>
 
     <script>
-        // Configuración de APIs
         const GEMINI_KEY = "AIzaSyApkkp1hMsopejJzV5sDXzpcdY0wWHjJT0";
         const ELEVEN_KEY = "sk_31d845ebfc082c303d5f166ce45af9211a4251b14aca1604";
 
@@ -94,7 +90,6 @@
         let playlist = [];
         let currentIndex = -1;
 
-        // Gestión de archivos
         document.getElementById('musicFiles').addEventListener('change', (e) => {
             const files = Array.from(e.target.files);
             if (files.length === 0) return;
@@ -116,12 +111,11 @@
             playlistContainer.innerHTML = playlist.map((s, i) => `
                 <div class="p-2 bg-slate-800/30 rounded border border-slate-700/50 text-xs flex justify-between">
                     <span class="truncate">${s.name}</span>
-                    <span class="text-blue-500">MP3</span>
+                    <span class="text-blue-500 font-bold">#${i+1}</span>
                 </div>
             `).join('');
         }
 
-        // Flujo Principal
         playBtn.addEventListener('click', async () => {
             if (playlist.length === 0) return;
             
@@ -129,27 +123,21 @@
             currentIndex = (currentIndex + 1) % playlist.length;
             const song = playlist[currentIndex];
             
-            const streamer = document.getElementById('streamerName').value || "el Streamer";
-            const game = document.getElementById('gameName').value || "un juegazo";
-            const extra = document.getElementById('extraInstructions').innerText;
+            const streamer = document.getElementById('streamerName').value || "Elizabeth";
+            const game = document.getElementById('gameName').value || "tu directo";
+            const extra = document.getElementById('extraInstructions').value || "";
             const voiceId = document.getElementById('voiceId').value;
 
             try {
-                // 1. Gemini: Generar guion
-                setUI(true, "Escribiendo guion de locución...");
+                setUI(true, "Escribiendo guion...");
                 const scriptText = await generateRadioScript(streamer, game, song.name, extra);
                 
-                // 2. ElevenLabs: Generar audio (Directo desde el navegador para asegurar funcionamiento)
-                setUI(true, "Generando voz del locutor...");
+                setUI(true, "Generando voz...");
                 const voiceBlob = await generateElevenLabsAudio(scriptText, voiceId);
                 const voiceUrl = URL.createObjectURL(voiceBlob);
 
-                // 3. Reproducción secuencial
-                document.getElementById('nowPlaying').innerText = `🎙️ Presentando: ${song.name}`;
+                document.getElementById('nowPlaying').innerText = `🎙️ Locución para: ${song.name}`;
                 audioPlayer.src = voiceUrl;
-                
-                audioPlayer.onplay = () => setUI(true, "Voz de la IA en vivo...");
-                
                 await audioPlayer.play();
 
                 audioPlayer.onended = () => {
@@ -160,28 +148,27 @@
                     
                     audioPlayer.onended = () => {
                         playBtn.disabled = false;
-                        document.getElementById('nowPlaying').innerText = "Canción terminada";
+                        document.getElementById('nowPlaying').innerText = "Fin de canción";
                     };
                 };
 
             } catch (error) {
-                console.error("Error crítico:", error);
+                console.error(error);
                 alert("Error: " + error.message);
                 setUI(false);
                 playBtn.disabled = false;
             }
         });
 
-        // Funciones API
         async function generateRadioScript(streamer, game, song, extra) {
-            const prompt = `Actúa como un locutor de radio pro. Presenta al streamer "${streamer}" jugando a "${game}". La canción que sigue es "${song}". Instrucciones: ${extra}. Máximo 20 palabras. Sé natural y breve.`;
+            const prompt = `Actúa como locutor de radio. Presenta a "${streamer}" jugando "${game}". Sigue la canción "${song}". Instrucciones: ${extra}. Máximo 20 palabras.`;
             
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_KEY}`, {
+            // Modelo cambiado a gemini-1.5-flash para compatibilidad estable
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                    systemInstruction: { parts: [{ text: "Eres un locutor de radio experto." }] }
+                    contents: [{ parts: [{ text: prompt }] }]
                 })
             });
 
@@ -206,7 +193,7 @@
 
             if (!res.ok) {
                 const err = await res.json();
-                throw new Error(err.detail?.message || "Error en ElevenLabs (Revisa créditos)");
+                throw new Error(err.detail?.message || "Error en ElevenLabs");
             }
             return await res.blob();
         }
