@@ -106,6 +106,7 @@
     </div>
 
     <script>
+        // Nota: Asegúrate de que las API KEYS estén configuradas o se pasen correctamente.
         const API_KEY = ""; // Gemini & Google TTS
         const ELEVEN_KEY = "sk_31d845ebfc082c303d5f166ce45af9211a4251b14aca1604";
 
@@ -131,7 +132,6 @@
         let playlist = [];
         let currentIndex = -1;
         let isLocutionActive = false;
-        let isPaused = true;
 
         function updateVoiceList() {
             const engine = document.getElementById('voiceEngine').value;
@@ -154,7 +154,7 @@
             `).join('');
         }
 
-        async function playNext(direction = 1) {
+        async function playTrack(direction = 1) {
             if (playlist.length === 0) return;
             
             currentIndex = (currentIndex + direction + playlist.length) % playlist.length;
@@ -168,16 +168,15 @@
 
             try {
                 isLocutionActive = true;
-                togglePlayState(false);
                 setUI(true, "La IA está preparando tu entrada...");
                 
-                const script = await generateScript(streamer, game, song.name);
+                const scriptText = await generateScript(streamer, game, song.name);
                 let audioUrl;
                 
                 if (engine === 'google') {
-                    audioUrl = await generateGoogleTTS(script, voiceId);
+                    audioUrl = await generateGoogleTTS(scriptText, voiceId);
                 } else {
-                    const blob = await generateElevenLabsAudio(script, voiceId);
+                    const blob = await generateElevenLabsAudio(scriptText, voiceId);
                     audioUrl = URL.createObjectURL(blob);
                 }
 
@@ -186,7 +185,7 @@
                 
                 audioPlayer.src = audioUrl;
                 await audioPlayer.play();
-                togglePlayState(false);
+                togglePlayIcons(false);
 
                 audioPlayer.onended = () => {
                     isLocutionActive = false;
@@ -194,15 +193,13 @@
                     setUI(false);
                     audioPlayer.src = song.blobUrl;
                     audioPlayer.play();
-                    togglePlayState(false);
                     
-                    audioPlayer.onended = () => playNext(1);
+                    audioPlayer.onended = () => playTrack(1);
                 };
             } catch (error) {
-                console.error(error);
+                console.error("Fallo en la IA:", error);
                 setUI(false);
                 isLocutionActive = false;
-                // Fallback directo a la canción si la IA falla
                 audioPlayer.src = song.blobUrl;
                 audioPlayer.play();
             }
@@ -210,28 +207,27 @@
 
         mainPlayBtn.addEventListener('click', () => {
             if (currentIndex === -1 && playlist.length > 0) {
-                playNext(1);
+                playTrack(1);
             } else if (audioPlayer.paused) {
                 audioPlayer.play();
-                togglePlayState(false);
+                togglePlayIcons(false);
             } else {
                 audioPlayer.pause();
-                togglePlayState(true);
+                togglePlayIcons(true);
             }
         });
 
-        nextBtn.addEventListener('click', () => playNext(1));
-        prevBtn.addEventListener('click', () => playNext(-1));
+        nextBtn.addEventListener('click', () => playTrack(1));
+        prevBtn.addEventListener('click', () => playTrack(-1));
 
-        function togglePlayState(paused) {
-            isPaused = paused;
+        function togglePlayIcons(paused) {
             playIcon.classList.toggle('hidden', !paused);
             pauseIcon.classList.toggle('hidden', paused);
         }
 
         async function generateScript(streamer, game, song) {
             const extra = document.getElementById('extraInstructions').value;
-            const prompt = `Actúa como un locutor de radio profesional con mucha energía. Dale la bienvenida a los espectadores del canal de ${streamer}. Menciona que estamos viendo un gran stream de ${game}. Haz una transición épica hacia la siguiente canción que se llama "${song}". ${extra}. Sé un poco más extenso y cálido, usa unas 25 a 35 palabras.`;
+            const prompt = `Actúa como un locutor de radio profesional con mucha energía. Dale la bienvenida a los espectadores del canal de ${streamer}. Menciona que estamos viendo un gran stream de ${game}. Haz una transición épica hacia la siguiente canción que se llama "${song}". ${extra}. Sé extenso y cálido, usa entre 30 y 45 palabras.`;
             
             const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`, {
                 method: 'POST',
@@ -247,7 +243,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    contents: [{ parts: [{ text: `Say with enthusiasm: ${text}` }] }],
+                    contents: [{ parts: [{ text: text }] }],
                     generationConfig: { 
                         responseModalities: ["AUDIO"],
                         speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceName } } }
